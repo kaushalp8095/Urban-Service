@@ -299,6 +299,52 @@ export default function Home() {
           </div>
         </div>
       </section>
+      {/* How it works */}
+      <section className="py-16 md:py-24 bg-gray-50">
+        <div className="container mx-auto px-4 text-center">
+          <h2 className="text-3xl md:text-4xl font-bold mb-12 md:mb-20">How it works</h2>
+          <div className="flex flex-col md:flex-row justify-center items-start gap-12 md:gap-16 max-w-5xl mx-auto">
+            {[
+              { num: 1, title: 'Choose a Service', desc: 'Select from our wide range of premium home services.' },
+              { num: 2, title: 'Pick a Time', desc: 'Schedule a time that works best for your busy schedule.' },
+              { num: 3, title: 'Job Done!', desc: 'Our certified professional arrives and completes the job with a smile.' },
+            ].map((step) => (
+              <div key={step.num} className="flex flex-col items-center flex-1">
+                <div className="w-16 h-16 md:w-20 md:h-20 rounded-2xl bg-primary/10 flex items-center justify-center mb-6 text-2xl font-bold text-primary transform rotate-3 hover:rotate-0 transition-transform">
+                  {step.num}
+                </div>
+                <h3 className="font-bold text-xl mb-3">{step.title}</h3>
+                <p className="text-muted-foreground text-sm leading-relaxed max-w-[250px]">{step.desc}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* App Banner */}
+      <section className="py-20 bg-black text-white text-center px-4 relative overflow-hidden">
+        <div className="absolute top-0 left-0 w-full h-full opacity-20 bg-[url('https://images.unsplash.com/photo-1512428559087-560fa5ceab42?q=80&w=2070')] bg-cover bg-center" />
+        <div className="relative z-10 max-w-4xl mx-auto">
+          <h2 className="text-3xl md:text-5xl font-black mb-6 tracking-tight">Experience UrbanService on Mobile</h2>
+          <p className="text-gray-400 mb-10 text-lg md:text-xl max-w-2xl mx-auto">Book faster, track your professional in real-time, and get exclusive app-only deals.</p>
+          <div className="flex flex-col sm:flex-row justify-center gap-4">
+            <Button size="lg" className="bg-white text-black hover:bg-gray-200 h-14 px-8 rounded-2xl font-bold flex items-center gap-2">
+              <span className="text-2xl">🍎</span>
+              <div className="text-left leading-none">
+                <div className="text-[10px] uppercase font-bold opacity-60">Download on the</div>
+                <div className="text-lg">App Store</div>
+              </div>
+            </Button>
+            <Button size="lg" className="bg-white text-black hover:bg-gray-200 h-14 px-8 rounded-2xl font-bold flex items-center gap-2">
+              <span className="text-2xl">🤖</span>
+              <div className="text-left leading-none">
+                <div className="text-[10px] uppercase font-bold opacity-60">Get it on</div>
+                <div className="text-lg">Google Play</div>
+              </div>
+            </Button>
+          </div>
+        </div>
+      </section>
     </div>
   );
 }
