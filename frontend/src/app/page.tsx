@@ -1,4 +1,5 @@
 'use client';
+// Build trigger: 2026-05-07 10:11
 
 import Link from 'next/link';
 import { Search, Star, Shield, Clock, MapPin, ChevronRight, Loader2, X } from 'lucide-react';
