@@ -1,5 +1,6 @@
 'use client';
 
+import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useCategories } from '@/lib/api/hooks';
 import { usePathname } from 'next/navigation';
@@ -8,11 +9,21 @@ export function CategoriesGrid() {
   const { data: response, isLoading } = useCategories();
   const pathname = usePathname();
   
-  // Extract city from URL path if present (e.g., /ahmedabad)
   const pathSegments = pathname.split('/').filter(Boolean);
-  const city = pathSegments.length > 0 && !['login', 'booking', 'orders', 'profile', 'partner', 'admin'].includes(pathSegments[0])
-    ? pathSegments[0]
-    : 'mumbai';
+  const reservedRoutes = ['login', 'booking', 'orders', 'profile', 'partner', 'admin', 'search'];
+  
+  // Get city from URL or LocalStorage
+  const [city, setCity] = useState('mumbai'); // Default for SSR
+  
+  useEffect(() => {
+    const cityFromUrl = pathSegments.length > 0 && !reservedRoutes.includes(pathSegments[0]) 
+      ? pathSegments[0] 
+      : null;
+    
+    const savedCity = localStorage.getItem('selectedCity');
+    const finalCity = cityFromUrl || savedCity?.toLowerCase() || 'mumbai';
+    setCity(finalCity);
+  }, [pathname]);
 
   // Fallback to static if backend isn't running or fails
   const categories = response?.data || [

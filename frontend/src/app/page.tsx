@@ -51,6 +51,13 @@ const POPULAR_QUERIES = ['AC Service', 'Home Cleaning', 'Electrician', 'Plumbing
 export default function Home() {
   const [search, setSearch] = useState('');
   const [city, setCity] = useState('Mumbai');
+  const [citySlug, setCitySlug] = useState('mumbai');
+  
+  useEffect(() => {
+    const savedCity = localStorage.getItem('selectedCity') || 'Mumbai';
+    setCity(savedCity);
+    setCitySlug(savedCity.toLowerCase());
+  }, []);
   const [showDropdown, setShowDropdown] = useState(false);
   const [debouncedSearch, setDebouncedSearch] = useState('');
   const router = useRouter();
@@ -357,13 +364,13 @@ export default function Home() {
           <div className="mt-16">
             <div className="flex items-center justify-between mb-6">
               <h3 className="text-xl md:text-2xl font-bold">Most Booked Services</h3>
-              <Link href="/mumbai" className="text-sm text-primary font-medium hover:underline flex items-center gap-1">
+              <Link href={`/${citySlug}`} className="text-sm text-primary font-medium hover:underline flex items-center gap-1">
                 View all <ChevronRight className="w-4 h-4" />
               </Link>
             </div>
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6">
               {POPULAR_SERVICES_HOME.map((svc) => (
-                <Link key={svc.id} href={`/mumbai/${svc.category}/${svc.id}`}>
+                <Link key={svc.id} href={`/${citySlug}/${svc.category}/${svc.id}`}>
                   <div className="bg-white border rounded-2xl p-5 hover:shadow-lg hover:border-primary/30 transition-all group cursor-pointer h-full">
                     <div className="flex items-start gap-4">
                       <div className="text-3xl shrink-0">{svc.emoji}</div>

@@ -2,7 +2,7 @@
 
 import { useState, useRef, useEffect } from 'react';
 import { MapPin, Search, ChevronDown, X } from 'lucide-react';
-import { useRouter } from 'next/navigation';
+import { useRouter, usePathname } from 'next/navigation';
 
 const CITIES = [
   // Andhra Pradesh
@@ -339,11 +339,31 @@ interface CitySelectProps {
 
 export function CitySelect({ selectedCity, onSelect }: CitySelectProps) {
   const router = useRouter();
+  const pathname = usePathname();
   const [isOpen, setIsOpen] = useState(false);
   const [search, setSearch] = useState('');
-  const [currentCity, setCurrentCity] = useState(selectedCity || '');
+  const [currentCity, setCurrentCity] = useState('');
   const dropdownRef = useRef<HTMLDivElement>(null);
   const searchRef = useRef<HTMLInputElement>(null);
+
+  // Sync with URL or LocalStorage on mount and path change
+  useEffect(() => {
+    const pathSegments = pathname.split('/').filter(Boolean);
+    // Cities are usually the first segment if not a reserved route
+    const reservedRoutes = ['login', 'booking', 'orders', 'profile', 'partner', 'admin', 'search'];
+    const cityFromUrl = pathSegments.length > 0 && !reservedRoutes.includes(pathSegments[0]) 
+      ? pathSegments[0] 
+      : null;
+
+    if (cityFromUrl) {
+      const formattedCity = cityFromUrl.charAt(0).toUpperCase() + cityFromUrl.slice(1);
+      setCurrentCity(formattedCity);
+      localStorage.setItem('selectedCity', formattedCity);
+    } else {
+      const savedCity = localStorage.getItem('selectedCity');
+      if (savedCity) setCurrentCity(savedCity);
+    }
+  }, [pathname]);
 
   const filtered = CITIES.filter(
     (c) =>
@@ -372,16 +392,21 @@ export function CitySelect({ selectedCity, onSelect }: CitySelectProps) {
 
   const handleSelect = (cityName: string) => {
     setCurrentCity(cityName);
+    localStorage.setItem('selectedCity', cityName);
     setIsOpen(false);
     setSearch('');
     if (onSelect) onSelect(cityName);
+    
+    // Redirect to the city home page
     router.push(`/${cityName.toLowerCase()}`);
   };
 
   const handleClear = (e: React.MouseEvent) => {
     e.stopPropagation();
     setCurrentCity('');
+    localStorage.removeItem('selectedCity');
     if (onSelect) onSelect('');
+    router.push('/');
   };
 
   return (
@@ -389,22 +414,23 @@ export function CitySelect({ selectedCity, onSelect }: CitySelectProps) {
       {/* Trigger Button */}
       <button
         onClick={() => setIsOpen((v) => !v)}
-        className={`hidden md:flex items-center gap-2 text-sm font-medium px-3 py-2 rounded-lg border transition-all duration-200 ${
+        className={`flex items-center gap-2 text-sm font-bold px-4 py-2.5 rounded-2xl border transition-all duration-300 ${
           isOpen
-            ? 'border-primary text-primary bg-blue-50'
-            : 'border-transparent text-muted-foreground hover:text-black hover:bg-gray-100'
+            ? 'border-amber-400 text-amber-600 bg-amber-50 shadow-lg shadow-amber-200/20'
+            : 'border-gray-100 text-gray-500 hover:text-black hover:bg-gray-50'
         }`}
       >
-        <MapPin className="w-4 h-4 shrink-0" />
-        <span className="max-w-[110px] truncate">
+        <MapPin className={`w-4 h-4 shrink-0 ${currentCity ? 'text-amber-500' : 'text-gray-400'}`} />
+        <span className="max-w-[120px] truncate">
           {currentCity || 'Select City'}
         </span>
         {currentCity ? (
-          <X className="w-3.5 h-3.5 ml-1 hover:text-red-500" onClick={handleClear} />
+          <X className="w-3.5 h-3.5 ml-1 hover:text-red-500 transition-colors" onClick={handleClear} />
         ) : (
-          <ChevronDown className={`w-3.5 h-3.5 transition-transform duration-200 ${isOpen ? 'rotate-180' : ''}`} />
+          <ChevronDown className={`w-3.5 h-3.5 transition-transform duration-300 ${isOpen ? 'rotate-180' : ''}`} />
         )}
       </button>
+
 
       {/* Dropdown */}
       {isOpen && (

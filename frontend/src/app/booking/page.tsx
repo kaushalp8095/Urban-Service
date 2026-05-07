@@ -20,10 +20,16 @@ function BookingContent() {
   // Address form state
   const [address, setAddress] = useState({
     line1: '',
-    city: 'Mumbai',
-    state: 'Maharashtra',
+    city: '',
+    state: '',
     pinCode: ''
   });
+
+  // Sync city on mount
+  useEffect(() => {
+    const savedCity = localStorage.getItem('selectedCity') || 'Mumbai';
+    setAddress(prev => ({ ...prev, city: savedCity }));
+  }, []);
 
   const { data: serviceData, isLoading: isLoadingService } = useService(serviceId as string);
   const service = serviceData?.data;

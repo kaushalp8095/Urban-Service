@@ -58,10 +58,13 @@ function SearchResults() {
   const searchParams = useSearchParams();
   const router = useRouter();
   const initialQuery = searchParams.get('q') || '';
-  const initialCity = searchParams.get('city') || 'Mumbai';
-
   const [query, setQuery] = useState(initialQuery);
-  const [city, setCity] = useState(initialCity);
+  const [city, setCity] = useState('Mumbai');
+
+  useEffect(() => {
+    const savedCity = localStorage.getItem('selectedCity') || searchParams.get('city') || 'Mumbai';
+    setCity(savedCity);
+  }, [searchParams]);
   const [debouncedQuery, setDebouncedQuery] = useState(initialQuery);
 
   // Debounce the query
