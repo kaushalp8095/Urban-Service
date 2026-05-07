@@ -117,6 +117,17 @@ async function main() {
     { name: 'Haircut + Beard',  price: 299, duration_min: 45, inclusions: ['Haircut', 'Beard trim & shaping', 'Moisturiser'] },
     { name: 'Premium Grooming', price: 499, duration_min: 60, inclusions: ['Haircut', 'Beard shaping', 'Face massage', 'Hair styling'] },
   ]);
+  // slug: haircut-beard-combo
+  await createService('Haircut Beard Combo', 'Complete haircut and beard styling combo by expert barbers at home.', catSalonM.id, [
+    { name: 'Haircut + Beard Trim',   price: 299, duration_min: 45, inclusions: ['Haircut', 'Beard trim & shaping', 'Moisturiser'] },
+    { name: 'Haircut + Beard Design', price: 399, duration_min: 60, inclusions: ['Haircut', 'Beard design & line-up', 'Face serum', 'Styling'] },
+  ]);
+  // slug: hair-color-men
+  await createService('Hair Color Men', 'Professional hair coloring service for men at home using premium products.', catSalonM.id, [
+    { name: 'Global Color',    price: 599,  duration_min: 60,  inclusions: ['Color application', 'Wash', 'Basic styling'] },
+    { name: 'Color + Haircut', price: 799,  duration_min: 90,  inclusions: ['Hair color', 'Haircut', 'Wash & styling'] },
+    { name: 'Highlight Color', price: 1299, duration_min: 120, inclusions: ['Highlighting', 'Toning', 'Wash & blow dry'] },
+  ]);
   await createService('Beard Styling', 'Expert beard trim, shaping and grooming at home.', catSalonM.id, [
     { name: 'Beard Trim',   price: 149, duration_min: 20, inclusions: ['Trim & shape', 'Moisturiser'] },
     { name: 'Beard Design', price: 249, duration_min: 30, inclusions: ['Design shaping', 'Line-up', 'Serum'] },
@@ -143,6 +154,12 @@ async function main() {
     { name: 'Switch Repair',    price: 149, duration_min: 20,  inclusions: ['Diagnosis', 'Switch replacement'] },
     { name: 'Socket Repair',    price: 199, duration_min: 30,  inclusions: ['Socket replacement', 'Wiring check'] },
     { name: 'Full Room Wiring', price: 999, duration_min: 120, inclusions: ['Point-to-point wiring', 'DB connection', 'Testing'] },
+  ]);
+  // slug: switchboard-repair
+  await createService('Switchboard Repair', 'Expert repair and replacement of switchboards, MCBs and distribution boards.', catElec.id, [
+    { name: 'Single Switch',     price: 149, duration_min: 20, inclusions: ['Switch replacement', 'Wiring check'] },
+    { name: 'Switchboard Repair',price: 299, duration_min: 45, inclusions: ['Full board check', 'MCB test', 'Loose wire fixing'] },
+    { name: 'DB Box Repair',     price: 599, duration_min: 60, inclusions: ['Distribution board check', 'MCB replacement', 'Safety test'] },
   ]);
 
   // ─── Appliance Repair ─────────────────────────────────────────
@@ -187,12 +204,29 @@ async function main() {
     { name: '3 Seater Sofa', price: 699, duration_min: 90,  inclusions: ['Vacuum', 'Shampoo wash', 'Steam clean', 'Deodorizing'] },
     { name: 'L-Shape Sofa',  price: 999, duration_min: 120, inclusions: ['Vacuum', 'Shampoo wash', 'Steam clean', 'Deodorizing'] },
   ]);
+  // slug: sofa-dry-clean
+  await createService('Sofa Dry Cleaning', 'Professional dry cleaning for all sofa types. Stain removal included.', catSofa.id, [
+    { name: '2 Seater', price: 599,  duration_min: 60,  inclusions: ['Dry clean solvent', 'Stain removal', 'Deodorizing'] },
+    { name: '3 Seater', price: 799,  duration_min: 90,  inclusions: ['Dry clean solvent', 'Stain removal', 'Deodorizing'] },
+    { name: 'L-Shape',  price: 1199, duration_min: 120, inclusions: ['Dry clean solvent', 'Stain removal', 'Fabric protection'] },
+  ]);
+  // slug: carpet-cleaning
+  await createService('Carpet Cleaning', 'Deep cleaning and stain removal for all types of carpets.', catSofa.id, [
+    { name: 'Small Carpet (up to 4x6 ft)',  price: 399, duration_min: 45,  inclusions: ['Vacuum', 'Shampoo wash', 'Drying'] },
+    { name: 'Large Carpet (up to 6x9 ft)',  price: 699, duration_min: 75,  inclusions: ['Vacuum', 'Shampoo wash', 'Stain removal', 'Drying'] },
+  ]);
 
   // ─── Water Purifier ───────────────────────────────────────────
   await createService('RO Service', 'Complete RO water purifier servicing and filter replacement.', catWater.id, [
     { name: 'Basic Service',      price: 349, duration_min: 45, inclusions: ['Filter check', 'Sanitization', 'TDS check'] },
     { name: 'Filter Replacement', price: 799, duration_min: 60, inclusions: ['Sediment filter', 'Carbon filter', 'Membrane check', 'TDS test'] },
     { name: 'Full Service',       price: 999, duration_min: 90, inclusions: ['All filters replaced', 'Membrane check', 'Sanitization', 'TDS test'] },
+  ]);
+  // slug: water-purifier-service
+  await createService('Water Purifier Service', 'Annual service and maintenance of all water purifier brands including RO, UV, and UF.', catWater.id, [
+    { name: 'Annual Service',       price: 299, duration_min: 45, inclusions: ['Filter check', 'Sanitization', 'TDS test', 'Service report'] },
+    { name: 'Filter Replacement',   price: 799, duration_min: 60, inclusions: ['All filters replaced', 'Membrane check', 'TDS test'] },
+    { name: 'Full AMC (1 year)',    price: 1999, duration_min: 60, inclusions: ['2 free services', 'All filter replacements', 'Priority support'] },
   ]);
 
   // ─── Users & Partners ────────────────────────────────────────

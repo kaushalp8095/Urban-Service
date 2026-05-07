@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Poppins } from "next/font/google";
 import "./globals.css";
 import { QueryProvider } from "@/components/providers/query-provider";
+import { CityProvider } from "@/components/providers/city-provider";
 import { Header } from "@/components/layout/header";
 import { Footer } from "@/components/layout/footer";
 
@@ -28,9 +29,11 @@ export default function RootLayout({
     >
       <body className={`${poppins.className} min-h-full flex flex-col`} suppressHydrationWarning>
         <QueryProvider>
-          <Header />
-          <main className="flex-1">{children}</main>
-          <Footer />
+          <CityProvider>
+            <Header />
+            <main className="flex-1">{children}</main>
+            <Footer />
+          </CityProvider>
         </QueryProvider>
       </body>
     </html>

@@ -16,8 +16,14 @@ export default function CategoryPage({ params }: { params: Promise<{ city: strin
   const cityName = city.charAt(0).toUpperCase() + city.slice(1).replace(/-/g, ' ');
   const services = servicesResponse?.data || [];
   
-  // Find category meta from fetched categories
-  const category = categoriesResponse?.data?.find((c: any) => c.id === categoryId) || { name: 'Service', image_url: '✨' };
+  // Find category meta from fetched categories — match by UUID or by slug (name-derived)
+  const slugToName = (slug: string) => slug.replace(/-/g, ' ').toLowerCase();
+  const category = categoriesResponse?.data?.find(
+    (c: any) => c.id === categoryId || slugToName(c.name) === slugToName(categoryId)
+  ) ||
+  // Fallback: use the first service's category if available
+  (services[0]?.category) ||
+  { name: categoryId.replace(/-/g, ' ').replace(/\b\w/g, (l: string) => l.toUpperCase()), image_url: '✨' };
 
   if (isLoadingServices) {
     return (
@@ -34,9 +40,12 @@ export default function CategoryPage({ params }: { params: Promise<{ city: strin
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-50 flex-col px-4 text-center">
         <AlertCircle className="w-12 h-12 text-red-500 mb-4" />
-        <h2 className="text-xl font-bold">Failed to load services</h2>
+        <h2 className="text-xl font-bold">Could not load services</h2>
         <p className="text-muted-foreground mt-2 mb-6">Please check your connection or try again later.</p>
-        <Button onClick={() => window.location.reload()}>Retry</Button>
+        <div className="flex gap-3">
+          <Button onClick={() => window.location.reload()}>Retry</Button>
+          <Button variant="outline" onClick={() => window.history.back()}>Go Back</Button>
+        </div>
       </div>
     );
   }

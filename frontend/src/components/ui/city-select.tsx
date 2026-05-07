@@ -3,6 +3,7 @@
 import { useState, useRef, useEffect } from 'react';
 import { MapPin, Search, ChevronDown, X } from 'lucide-react';
 import { useRouter, usePathname } from 'next/navigation';
+import { useCity } from '@/components/providers/city-provider';
 
 const CITIES = [
   // Andhra Pradesh
@@ -342,38 +343,31 @@ interface CitySelectProps {
 export function CitySelect({ onSelect, variant = 'header', shouldRedirect = true }: CitySelectProps) {
   const router = useRouter();
   const pathname = usePathname();
+  const { city: contextCity, setSelectedCity: setContextCity, clearCity } = useCity();
   const [isOpen, setIsOpen] = useState(false);
   const [search, setSearch] = useState('');
-  const [currentCity, setCurrentCity] = useState('');
   const dropdownRef = useRef<HTMLDivElement>(null);
   const searchRef = useRef<HTMLInputElement>(null);
 
-  // Sync with URL, LocalStorage and Custom Events
+  // Sync city FROM URL into context (e.g. when landing on /delhi/ac-service)
   useEffect(() => {
-    const syncCity = () => {
-      const pathSegments = pathname.split('/').filter(Boolean);
-      const reservedRoutes = ['login', 'booking', 'orders', 'profile', 'partner', 'admin', 'search'];
-      const cityFromUrl = pathSegments.length > 0 && !reservedRoutes.includes(pathSegments[0]) 
-        ? pathSegments[0] 
-        : null;
+    const pathSegments = pathname.split('/').filter(Boolean);
+    const reservedRoutes = ['login', 'booking', 'orders', 'profile', 'partner', 'admin', 'search'];
+    const cityFromUrl = pathSegments.length > 0 && !reservedRoutes.includes(pathSegments[0])
+      ? pathSegments[0]
+      : null;
 
-      if (cityFromUrl) {
-        const formattedCity = cityFromUrl.charAt(0).toUpperCase() + cityFromUrl.slice(1);
-        setCurrentCity(formattedCity);
-        localStorage.setItem('selectedCity', formattedCity);
-      } else {
-        const savedCity = localStorage.getItem('selectedCity');
-        if (savedCity) setCurrentCity(savedCity);
-        else setCurrentCity('');
+    if (cityFromUrl) {
+      const formattedCity = cityFromUrl.charAt(0).toUpperCase() + cityFromUrl.slice(1);
+      // Only update if it actually changed to avoid infinite loops
+      if (formattedCity !== contextCity) {
+        setContextCity(formattedCity);
       }
-    };
-
-    syncCity();
-    
-    // Listen for global city changes
-    window.addEventListener('urbanServiceCityChanged', syncCity as any);
-    return () => window.removeEventListener('urbanServiceCityChanged', syncCity as any);
+    }
   }, [pathname]);
+
+  // Use context city as the display value
+  const currentCity = contextCity;
 
   const filtered = CITIES.filter(
     (c) =>
@@ -401,17 +395,10 @@ export function CitySelect({ onSelect, variant = 'header', shouldRedirect = true
   }, [isOpen]);
 
   const handleSelect = (cityName: string) => {
-    setCurrentCity(cityName);
-    localStorage.setItem('selectedCity', cityName);
+    setContextCity(cityName);  // updates context + localStorage + dispatches event
     setIsOpen(false);
     setSearch('');
-    
-    // Dispatch global event for other components
-    window.dispatchEvent(new CustomEvent('urbanServiceCityChanged', { detail: cityName }));
-    
     if (onSelect) onSelect(cityName);
-    
-    // Redirect only if prop is true
     if (shouldRedirect) {
       router.push(`/${cityName.toLowerCase()}`);
     }
@@ -419,12 +406,7 @@ export function CitySelect({ onSelect, variant = 'header', shouldRedirect = true
 
   const handleClear = (e: React.MouseEvent) => {
     e.stopPropagation();
-    setCurrentCity('');
-    localStorage.removeItem('selectedCity');
-    
-    // Dispatch global event
-    window.dispatchEvent(new CustomEvent('urbanServiceCityChanged', { detail: '' }));
-    
+    clearCity();  // clears context + localStorage + dispatches event
     if (onSelect) onSelect('');
     if (shouldRedirect) router.push('/');
   };

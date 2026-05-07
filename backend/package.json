@@ -10,6 +10,9 @@
     "vercel-build": "tsc",
     "postinstall": "prisma generate"
   },
+  "prisma": {
+    "seed": "ts-node prisma/seed.ts"
+  },
   "dependencies": {
     "@prisma/client": "^5.14.0",
     "cors": "^2.8.5",

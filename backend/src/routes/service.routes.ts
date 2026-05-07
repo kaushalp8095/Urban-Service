@@ -3,6 +3,9 @@ import prisma from '../utils/db';
 
 const router = Router();
 
+// UUID regex — used by both /category/:categoryId and /:id for slug resolution
+const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
 // Search services and categories
 router.get('/search', async (req: Request, res: Response) => {
   try {
@@ -71,13 +74,40 @@ router.get('/categories', async (req: Request, res: Response) => {
   }
 });
 
-// Get services by category ID — must be BEFORE /:id
+// Get services by category ID or slug — must be BEFORE /:id
+// Supports: /services/category/<uuid>  OR  /services/category/ac-service (slug derived from name)
 router.get('/category/:categoryId', async (req: Request, res: Response) => {
   try {
     const { city } = req.query;
+    const param = req.params.categoryId;
+
+    // Resolve category: try UUID first, then slug lookup
+    let categoryId = param;
+    if (!UUID_REGEX.test(param)) {
+      // Convert slug like "ac-service" → "ac service" and search by name
+      const nameFromSlug = param.replace(/-/g, ' ');
+      const category = await prisma.category.findFirst({
+        where: { name: { equals: nameFromSlug, mode: 'insensitive' } },
+      });
+      if (category) {
+        categoryId = category.id;
+      } else {
+        // Also try contains match (e.g. "home-cleaning" matches "Home Cleaning")
+        const categoryFuzzy = await prisma.category.findFirst({
+          where: { name: { contains: nameFromSlug.split(' ')[0], mode: 'insensitive' } },
+        });
+        if (categoryFuzzy) {
+          categoryId = categoryFuzzy.id;
+        } else {
+          // No matching category found — return empty list gracefully
+          return res.json({ success: true, data: [] });
+        }
+      }
+    }
+
     const services = await prisma.service.findMany({
       where: {
-        category_id: req.params.categoryId,
+        category_id: categoryId,
         is_active: true,
         ...(city ? { city_ids: { has: city as string } } : {}),
       },
@@ -88,9 +118,6 @@ router.get('/category/:categoryId', async (req: Request, res: Response) => {
     res.status(500).json({ success: false, error: { message: 'Failed to fetch services for category' } });
   }
 });
-
-// UUID regex
-const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 // Get single service by ID or slug (name-based)
 // Supports: /services/<uuid>  OR  /services/ac-gas-refill (slug derived from name)
@@ -108,6 +135,7 @@ router.get('/:id', async (req: Request, res: Response) => {
     } else {
       // Slug lookup: convert "ac-gas-refill" → "ac gas refill" and match by name
       const nameFromSlug = param.replace(/-/g, ' ');
+      // Try exact match first
       service = await prisma.service.findFirst({
         where: {
           name: { equals: nameFromSlug, mode: 'insensitive' },
@@ -115,6 +143,17 @@ router.get('/:id', async (req: Request, res: Response) => {
         },
         include: { packages: true, category: true },
       });
+      // Fallback: contains match on first keyword(s)
+      if (!service) {
+        const firstKeyword = nameFromSlug.split(' ').slice(0, 2).join(' ');
+        service = await prisma.service.findFirst({
+          where: {
+            name: { contains: firstKeyword, mode: 'insensitive' },
+            is_active: true,
+          },
+          include: { packages: true, category: true },
+        });
+      }
     }
 
     if (!service) {

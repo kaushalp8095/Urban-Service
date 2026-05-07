@@ -8,6 +8,7 @@ import { useState, useRef, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useSearch } from '@/lib/api/hooks';
 import { CitySelect } from '@/components/ui/city-select';
+import { useCity } from '@/components/providers/city-provider';
 
 const CITIES_QUICK = ['Mumbai', 'Delhi', 'Bangalore', 'Pune', 'Hyderabad', 'Ahmedabad', 'Chennai', 'Jaipur'];
 
@@ -49,25 +50,12 @@ const POPULAR_QUERIES = ['AC Service', 'Home Cleaning', 'Electrician', 'Plumbing
 
 export default function Home() {
   const [search, setSearch] = useState('');
-  const [city, setCity] = useState('Mumbai');
-  const [citySlug, setCitySlug] = useState('mumbai');
+  const { city, citySlug, setSelectedCity } = useCity();
   const [showDropdown, setShowDropdown] = useState(false);
   const [debouncedSearch, setDebouncedSearch] = useState('');
   const router = useRouter();
   const wrapperRef = useRef<HTMLDivElement>(null);
 
-  // Sync City with Global State and LocalStorage
-  useEffect(() => {
-    const sync = () => {
-      const savedCity = localStorage.getItem('selectedCity') || 'Mumbai';
-      setCity(savedCity);
-      setCitySlug(savedCity.toLowerCase());
-    };
-    
-    sync();
-    window.addEventListener('urbanServiceCityChanged', sync as any);
-    return () => window.removeEventListener('urbanServiceCityChanged', sync as any);
-  }, []);
 
   // Debounce search input
   useEffect(() => {
@@ -97,19 +85,19 @@ export default function Home() {
     e.preventDefault();
     if (search.trim()) {
       setShowDropdown(false);
-      router.push(`/search?q=${encodeURIComponent(search.trim())}&city=${encodeURIComponent(city)}`);
+      router.push(`/search?q=${encodeURIComponent(search.trim())}&city=${encodeURIComponent(city || 'Mumbai')}`);
     }
   };
 
   const handleSuggestionClick = (svc: typeof ALL_STATIC_SUGGESTIONS[0]) => {
     setShowDropdown(false);
-    router.push(`/${city.toLowerCase()}/${svc.category}/${svc.id}`);
+    router.push(`/${(city || 'Mumbai').toLowerCase()}/${svc.category}/${svc.id}`);
   };
 
   const handlePopularClick = (query: string) => {
     setSearch(query);
     setShowDropdown(false);
-    router.push(`/search?q=${encodeURIComponent(query)}&city=${encodeURIComponent(city)}`);
+    router.push(`/search?q=${encodeURIComponent(query)}&city=${encodeURIComponent(city || 'Mumbai')}`);
   };
 
   return (
@@ -133,10 +121,7 @@ export default function Home() {
                 <CitySelect 
                   variant="searchbar" 
                   shouldRedirect={false}
-                  onSelect={(val) => {
-                    setCity(val);
-                    setCitySlug(val.toLowerCase());
-                  }} 
+                  onSelect={(val) => { if (val) setSelectedCity(val); }} 
                 />
               </div>
 
@@ -269,13 +254,13 @@ export default function Home() {
           <div className="mt-16">
             <div className="flex items-center justify-between mb-6">
               <h3 className="text-xl md:text-2xl font-bold">Most Booked Services</h3>
-              <Link href={`/${citySlug}`} className="text-sm text-primary font-medium hover:underline flex items-center gap-1">
+              <Link href={`/${citySlug || 'mumbai'}`} className="text-sm text-primary font-medium hover:underline flex items-center gap-1">
                 View all <ChevronRight className="w-4 h-4" />
               </Link>
             </div>
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6">
               {POPULAR_SERVICES_HOME.map((svc) => (
-                <Link key={svc.id} href={`/${citySlug}/${svc.category}/${svc.id}`}>
+                <Link key={svc.id} href={`/${citySlug || 'mumbai'}/${svc.category}/${svc.id}`}>
                   <div className="bg-white border rounded-2xl p-5 hover:shadow-lg hover:border-primary/30 transition-all group h-full">
                     <div className="flex items-start gap-4">
                       <div className="text-3xl shrink-0">{svc.emoji}</div>
