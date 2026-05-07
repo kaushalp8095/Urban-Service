@@ -343,14 +343,17 @@ interface CitySelectProps {
 export function CitySelect({ onSelect, variant = 'header', shouldRedirect = true }: CitySelectProps) {
   const router = useRouter();
   const pathname = usePathname();
-  const { city: contextCity, setSelectedCity: setContextCity, clearCity } = useCity();
+  const { city: contextCity, setSelectedCity: setContextCity, setTransientCity, clearCity } = useCity();
   const [isOpen, setIsOpen] = useState(false);
   const [search, setSearch] = useState('');
   const dropdownRef = useRef<HTMLDivElement>(null);
   const searchRef = useRef<HTMLInputElement>(null);
 
-  // Sync city FROM URL into context (e.g. when landing on /delhi/ac-service)
+  // Sync city FROM URL into context — only for the header CitySelect (shouldRedirect=true)
+  // The search bar CitySelect doesn't need to do this (it's session-only)
   useEffect(() => {
+    if (!shouldRedirect) return;   // skip for search bar
+
     const pathSegments = pathname.split('/').filter(Boolean);
     const reservedRoutes = ['login', 'booking', 'orders', 'profile', 'partner', 'admin', 'search'];
     const cityFromUrl = pathSegments.length > 0 && !reservedRoutes.includes(pathSegments[0])
@@ -359,9 +362,8 @@ export function CitySelect({ onSelect, variant = 'header', shouldRedirect = true
 
     if (cityFromUrl) {
       const formattedCity = cityFromUrl.charAt(0).toUpperCase() + cityFromUrl.slice(1);
-      // Only update if it actually changed to avoid infinite loops
       if (formattedCity !== contextCity) {
-        setContextCity(formattedCity);
+        setContextCity(formattedCity); // persist — user navigated to this city URL
       }
     }
   }, [pathname]);
@@ -395,7 +397,13 @@ export function CitySelect({ onSelect, variant = 'header', shouldRedirect = true
   }, [isOpen]);
 
   const handleSelect = (cityName: string) => {
-    setContextCity(cityName);  // updates context + localStorage + dispatches event
+    if (shouldRedirect) {
+      // Header: persist to localStorage so it survives refresh
+      setContextCity(cityName);
+    } else {
+      // Search bar: session-only, cleared on refresh
+      setTransientCity(cityName);
+    }
     setIsOpen(false);
     setSearch('');
     if (onSelect) onSelect(cityName);

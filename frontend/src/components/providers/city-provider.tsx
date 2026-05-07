@@ -3,9 +3,10 @@
 import { createContext, useContext, useState, useEffect, useCallback, ReactNode } from 'react';
 
 interface CityContextType {
-  city: string;       // Display name e.g. "Delhi"
-  citySlug: string;   // URL slug e.g. "delhi"
-  setSelectedCity: (city: string) => void;
+  city: string;              // Display name e.g. "Delhi"
+  citySlug: string;          // URL slug e.g. "delhi"
+  setSelectedCity: (city: string) => void;   // Persists to localStorage (header)
+  setTransientCity: (city: string) => void;  // Session-only, NOT saved to localStorage (search bar)
   clearCity: () => void;
 }
 
@@ -13,6 +14,7 @@ const CityContext = createContext<CityContextType>({
   city: '',
   citySlug: '',
   setSelectedCity: () => {},
+  setTransientCity: () => {},
   clearCity: () => {},
 });
 
@@ -20,7 +22,7 @@ export function CityProvider({ children }: { children: ReactNode }) {
   const [city, setCity] = useState('');
   const [citySlug, setCitySlug] = useState('');
 
-  // On mount: read from localStorage (runs only in browser, after hydration)
+  // On mount: read persisted city from localStorage (browser-only, after hydration)
   useEffect(() => {
     const saved = localStorage.getItem('selectedCity');
     if (saved) {
@@ -28,7 +30,7 @@ export function CityProvider({ children }: { children: ReactNode }) {
       setCitySlug(saved.toLowerCase());
     }
 
-    // Listen for city changes dispatched by CitySelect
+    // Listen for PERSISTENT city changes (dispatched by header CitySelect)
     const handler = (e: Event) => {
       const detail = (e as CustomEvent<string>).detail;
       if (detail) {
@@ -46,11 +48,19 @@ export function CityProvider({ children }: { children: ReactNode }) {
     return () => window.removeEventListener('urbanServiceCityChanged', handler);
   }, []);
 
+  /** Persists to localStorage — use for header city selection */
   const setSelectedCity = useCallback((name: string) => {
     setCity(name);
     setCitySlug(name.toLowerCase());
     localStorage.setItem('selectedCity', name);
     window.dispatchEvent(new CustomEvent('urbanServiceCityChanged', { detail: name }));
+  }, []);
+
+  /** Session-only update — does NOT save to localStorage (search bar selection) */
+  const setTransientCity = useCallback((name: string) => {
+    setCity(name);
+    setCitySlug(name.toLowerCase());
+    // No localStorage.setItem — clears on refresh naturally
   }, []);
 
   const clearCity = useCallback(() => {
@@ -61,7 +71,7 @@ export function CityProvider({ children }: { children: ReactNode }) {
   }, []);
 
   return (
-    <CityContext.Provider value={{ city, citySlug, setSelectedCity, clearCity }}>
+    <CityContext.Provider value={{ city, citySlug, setSelectedCity, setTransientCity, clearCity }}>
       {children}
     </CityContext.Provider>
   );
