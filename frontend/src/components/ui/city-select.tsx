@@ -335,9 +335,11 @@ const CITIES = [
 interface CitySelectProps {
   selectedCity?: string;
   onSelect?: (city: string) => void;
+  variant?: 'header' | 'searchbar';
+  shouldRedirect?: boolean;
 }
 
-export function CitySelect({ selectedCity, onSelect }: CitySelectProps) {
+export function CitySelect({ onSelect, variant = 'header', shouldRedirect = true }: CitySelectProps) {
   const router = useRouter();
   const pathname = usePathname();
   const [isOpen, setIsOpen] = useState(false);
@@ -346,23 +348,31 @@ export function CitySelect({ selectedCity, onSelect }: CitySelectProps) {
   const dropdownRef = useRef<HTMLDivElement>(null);
   const searchRef = useRef<HTMLInputElement>(null);
 
-  // Sync with URL or LocalStorage on mount and path change
+  // Sync with URL, LocalStorage and Custom Events
   useEffect(() => {
-    const pathSegments = pathname.split('/').filter(Boolean);
-    // Cities are usually the first segment if not a reserved route
-    const reservedRoutes = ['login', 'booking', 'orders', 'profile', 'partner', 'admin', 'search'];
-    const cityFromUrl = pathSegments.length > 0 && !reservedRoutes.includes(pathSegments[0]) 
-      ? pathSegments[0] 
-      : null;
+    const syncCity = () => {
+      const pathSegments = pathname.split('/').filter(Boolean);
+      const reservedRoutes = ['login', 'booking', 'orders', 'profile', 'partner', 'admin', 'search'];
+      const cityFromUrl = pathSegments.length > 0 && !reservedRoutes.includes(pathSegments[0]) 
+        ? pathSegments[0] 
+        : null;
 
-    if (cityFromUrl) {
-      const formattedCity = cityFromUrl.charAt(0).toUpperCase() + cityFromUrl.slice(1);
-      setCurrentCity(formattedCity);
-      localStorage.setItem('selectedCity', formattedCity);
-    } else {
-      const savedCity = localStorage.getItem('selectedCity');
-      if (savedCity) setCurrentCity(savedCity);
-    }
+      if (cityFromUrl) {
+        const formattedCity = cityFromUrl.charAt(0).toUpperCase() + cityFromUrl.slice(1);
+        setCurrentCity(formattedCity);
+        localStorage.setItem('selectedCity', formattedCity);
+      } else {
+        const savedCity = localStorage.getItem('selectedCity');
+        if (savedCity) setCurrentCity(savedCity);
+        else setCurrentCity('');
+      }
+    };
+
+    syncCity();
+    
+    // Listen for global city changes
+    window.addEventListener('urbanServiceCityChanged', syncCity as any);
+    return () => window.removeEventListener('urbanServiceCityChanged', syncCity as any);
   }, [pathname]);
 
   const filtered = CITIES.filter(
@@ -395,46 +405,59 @@ export function CitySelect({ selectedCity, onSelect }: CitySelectProps) {
     localStorage.setItem('selectedCity', cityName);
     setIsOpen(false);
     setSearch('');
+    
+    // Dispatch global event for other components
+    window.dispatchEvent(new CustomEvent('urbanServiceCityChanged', { detail: cityName }));
+    
     if (onSelect) onSelect(cityName);
     
-    // Redirect to the city home page
-    router.push(`/${cityName.toLowerCase()}`);
+    // Redirect only if prop is true
+    if (shouldRedirect) {
+      router.push(`/${cityName.toLowerCase()}`);
+    }
   };
 
   const handleClear = (e: React.MouseEvent) => {
     e.stopPropagation();
     setCurrentCity('');
     localStorage.removeItem('selectedCity');
+    
+    // Dispatch global event
+    window.dispatchEvent(new CustomEvent('urbanServiceCityChanged', { detail: '' }));
+    
     if (onSelect) onSelect('');
-    router.push('/');
+    if (shouldRedirect) router.push('/');
   };
+
+  // Styling variants
+  const triggerStyles = variant === 'searchbar' 
+    ? `flex items-center gap-2 text-sm font-bold px-3 py-2 w-full sm:w-[150px] justify-between transition-all ${
+        isOpen ? 'text-amber-600' : 'text-gray-700 hover:bg-gray-50'
+      }`
+    : `flex items-center gap-2 text-xs md:text-sm font-bold px-2 md:px-4 py-2 md:py-2.5 rounded-xl md:rounded-2xl border transition-all duration-300 ${
+        isOpen
+          ? 'border-amber-400 text-amber-600 bg-amber-50'
+          : 'border-gray-100 text-gray-500 hover:text-black hover:bg-gray-50'
+      }`;
 
   return (
     <div className="relative" ref={dropdownRef}>
       {/* Trigger Button */}
-      <button
-        onClick={() => setIsOpen((v) => !v)}
-        className={`flex items-center gap-2 text-sm font-bold px-4 py-2.5 rounded-2xl border transition-all duration-300 ${
-          isOpen
-            ? 'border-amber-400 text-amber-600 bg-amber-50 shadow-lg shadow-amber-200/20'
-            : 'border-gray-100 text-gray-500 hover:text-black hover:bg-gray-50'
-        }`}
-      >
-        <MapPin className={`w-4 h-4 shrink-0 ${currentCity ? 'text-amber-500' : 'text-gray-400'}`} />
-        <span className="max-w-[120px] truncate">
-          {currentCity || 'Select City'}
-        </span>
+      <button onClick={() => setIsOpen((v) => !v)} className={triggerStyles}>
+        <div className="flex items-center gap-1.5 md:gap-2 truncate">
+          <MapPin className={`w-3.5 h-3.5 md:w-4 md:h-4 shrink-0 ${currentCity ? 'text-amber-500' : 'text-gray-400'}`} />
+          <span className="truncate max-w-[80px] md:max-w-[120px]">{currentCity || 'Select City'}</span>
+        </div>
         {currentCity ? (
-          <X className="w-3.5 h-3.5 ml-1 hover:text-red-500 transition-colors" onClick={handleClear} />
+          <X className="w-3 h-3 md:w-3.5 md:h-3.5 ml-1 hover:text-red-500 transition-colors" onClick={handleClear} />
         ) : (
-          <ChevronDown className={`w-3.5 h-3.5 transition-transform duration-300 ${isOpen ? 'rotate-180' : ''}`} />
+          <ChevronDown className={`w-3 h-3 md:w-3.5 md:h-3.5 transition-transform duration-300 ${isOpen ? 'rotate-180' : ''}`} />
         )}
       </button>
 
-
-      {/* Dropdown */}
+      {/* Dropdown - Fixed Z-Index and overflow issues */}
       {isOpen && (
-        <div className="absolute top-full left-0 mt-2 w-72 bg-white rounded-xl shadow-2xl border border-gray-100 z-50 overflow-hidden animate-in fade-in slide-in-from-top-2 duration-150">
+        <div className="absolute top-full left-0 mt-3 w-[280px] md:w-72 bg-white rounded-xl shadow-[0_20px_50px_rgba(0,0,0,0.2)] border border-gray-100 z-[9999] overflow-hidden animate-in fade-in slide-in-from-top-2 duration-150">
           {/* Search Input */}
           <div className="p-3 border-b bg-gray-50">
             <div className="flex items-center gap-2 bg-white border border-gray-200 rounded-lg px-3 py-2 focus-within:border-primary focus-within:ring-1 focus-within:ring-primary/30 transition-all">

@@ -16,13 +16,19 @@ export function CategoriesGrid() {
   const [city, setCity] = useState('mumbai'); // Default for SSR
   
   useEffect(() => {
-    const cityFromUrl = pathSegments.length > 0 && !reservedRoutes.includes(pathSegments[0]) 
-      ? pathSegments[0] 
-      : null;
-    
-    const savedCity = localStorage.getItem('selectedCity');
-    const finalCity = cityFromUrl || savedCity?.toLowerCase() || 'mumbai';
-    setCity(finalCity);
+    const sync = () => {
+      const cityFromUrl = pathSegments.length > 0 && !reservedRoutes.includes(pathSegments[0]) 
+        ? pathSegments[0] 
+        : null;
+      
+      const savedCity = localStorage.getItem('selectedCity');
+      const finalCity = cityFromUrl || savedCity?.toLowerCase() || 'mumbai';
+      setCity(finalCity);
+    };
+
+    sync();
+    window.addEventListener('urbanServiceCityChanged', sync as any);
+    return () => window.removeEventListener('urbanServiceCityChanged', sync as any);
   }, [pathname]);
 
   // Fallback to static if backend isn't running or fails
