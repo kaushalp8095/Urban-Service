@@ -3,7 +3,8 @@
 import { useSearchParams, useRouter } from 'next/navigation';
 import { useState, useEffect, Suspense } from 'react';
 import Link from 'next/link';
-import { Search, MapPin, Star, ArrowLeft, Loader2, SearchX } from 'lucide-react';
+import { ArrowLeft, Search, Star, Loader2, MapPin, SearchX, ChevronRight } from 'lucide-react';
+import { CitySelect } from '@/components/ui/city-select';
 import { useSearch } from '@/lib/api/hooks';
 
 const CITIES = ['Mumbai', 'Delhi', 'Bangalore', 'Pune', 'Hyderabad', 'Ahmedabad', 'Chennai', 'Jaipur'];
@@ -108,16 +109,13 @@ function SearchResults() {
               <ArrowLeft className="w-5 h-5" />
             </button>
 
-            {/* City Selector */}
-            <div className="flex items-center gap-1.5 px-3 py-2 border rounded-lg bg-gray-50 shrink-0">
-              <MapPin className="w-4 h-4 text-primary" />
-              <select
-                value={city}
-                onChange={(e) => setCity(e.target.value)}
-                className="bg-transparent border-none outline-none text-sm font-medium cursor-pointer"
-              >
-                {CITIES.map(c => <option key={c}>{c}</option>)}
-              </select>
+            {/* City Selector - Integrated Synchronized Component */}
+            <div className="flex items-center shrink-0">
+              <CitySelect 
+                variant="searchbar" 
+                shouldRedirect={false}
+                onSelect={(val) => setCity(val)} 
+              />
             </div>
 
             {/* Search Input */}
