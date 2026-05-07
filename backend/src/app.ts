@@ -9,7 +9,35 @@ const app: Application = express();
 
 // Security and utility middlewares
 app.use(helmet());
-app.use(cors());
+const ALLOWED_ORIGINS = (process.env.ALLOWED_ORIGINS || '')
+  .split(',')
+  .map((o) => o.trim())
+  .filter(Boolean);
+
+// Always allow localhost in dev + any vercel.app preview URLs
+const corsOptions: cors.CorsOptions = {
+  origin: (origin, callback) => {
+    // Allow requests with no origin (curl, Postman, server-to-server)
+    if (!origin) return callback(null, true);
+
+    // Exact matches from env
+    if (ALLOWED_ORIGINS.includes(origin)) return callback(null, true);
+
+    // Allow any *.vercel.app subdomain (covers preview deployments)
+    if (/^https:\/\/[\w-]+\.vercel\.app$/.test(origin)) return callback(null, true);
+
+    // Allow localhost in any port (dev)
+    if (/^http:\/\/localhost(:\d+)?$/.test(origin)) return callback(null, true);
+
+    callback(new Error(`CORS: origin ${origin} not allowed`));
+  },
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization'],
+};
+
+app.use(cors(corsOptions));
+app.options('*', cors(corsOptions)); // Pre-flight for all routes
 app.use(express.json());
 
 // Rate Limiting
