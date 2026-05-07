@@ -56,6 +56,17 @@ export const useSearch = (query: string, city?: string) => {
   });
 };
 
+export const useService = (id: string) => {
+  return useQuery({
+    queryKey: ['service', id],
+    queryFn: async () => {
+      const res = await apiClient.get(`/services/${id}`);
+      return res.data;
+    },
+    enabled: !!id,
+  });
+};
+
 // --- BOOKING HOOKS ---
 export const useCreateBooking = () => {
   return useMutation({
@@ -65,7 +76,12 @@ export const useCreateBooking = () => {
       scheduledAt: string;
       address: { line1: string; city: string; state: string; pinCode: string };
     }) => {
-      const res = await authApiClient.post('/bookings', data);
+      const payload = {
+        package_id: data.packageId,
+        slot_datetime: data.scheduledAt,
+        address: data.address
+      };
+      const res = await authApiClient.post('/bookings', payload);
       return res.data;
     },
   });

@@ -1,18 +1,34 @@
 'use client';
 
-import { useState } from 'react';
-import { useRouter } from 'next/navigation';
+import { useState, Suspense } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { Button } from '@/components/ui/button';
-import { CheckCircle2, MapPin, Clock, CreditCard, AlertCircle } from 'lucide-react';
+import { CheckCircle2, MapPin, Clock, CreditCard, AlertCircle, Loader2 } from 'lucide-react';
 import Link from 'next/link';
-import { useCreateBooking } from '@/lib/api/hooks';
+import { useCreateBooking, useService } from '@/lib/api/hooks';
 
-export default function BookingPage() {
+function BookingContent() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const serviceId = searchParams.get('serviceId');
+  const packageId = searchParams.get('packageId');
+
   const [step, setStep] = useState(1);
   const [date, setDate] = useState('2026-05-08');
   const [time, setTime] = useState('09:00 AM');
   
+  // Address form state
+  const [address, setAddress] = useState({
+    line1: '',
+    city: 'Mumbai',
+    state: 'Maharashtra',
+    pinCode: ''
+  });
+
+  const { data: serviceData, isLoading: isLoadingService } = useService(serviceId as string);
+  const service = serviceData?.data;
+  const selectedPackage = service?.packages?.find((p: any) => p.id === packageId);
+
   const createBookingMutation = useCreateBooking();
 
   const dates = ["Today, 6 May", "Tomorrow, 7 May", "Wed, 8 May", "Thu, 9 May"];
@@ -29,23 +45,50 @@ export default function BookingPage() {
     }
 
     try {
-      // Hardcoded serviceId and packageId for demonstration
       await createBookingMutation.mutateAsync({
-        serviceId: 'dummy-service-id',
-        packageId: 'dummy-package-id',
-        scheduledAt: `${date}T${time}`,
-        address: {
-          line1: 'Flat 402, Sunshine Apartments',
-          city: 'Mumbai',
-          state: 'Maharashtra',
-          pinCode: '400053'
-        }
+        serviceId: serviceId as string,
+        packageId: packageId as string,
+        scheduledAt: `${date}T${time.split(' ')[0]}:00.000Z`, // Simple ISO format mock
+        address: address
       });
       nextStep();
     } catch (err) {
       console.error('Failed to create booking:', err);
     }
   };
+
+  if (!serviceId || !packageId) {
+    return (
+      <div className="min-h-[60vh] flex flex-col items-center justify-center text-center px-4">
+        <AlertCircle className="w-12 h-12 text-orange-500 mb-4" />
+        <h2 className="text-2xl font-bold mb-2">Invalid Booking Link</h2>
+        <p className="text-muted-foreground mb-6">Please select a service and package first.</p>
+        <Button onClick={() => router.push('/')}>Go to Home</Button>
+      </div>
+    );
+  }
+
+  if (isLoadingService) {
+    return (
+      <div className="min-h-[60vh] flex items-center justify-center">
+        <Loader2 className="w-10 h-10 animate-spin text-primary" />
+      </div>
+    );
+  }
+
+  if (!selectedPackage) {
+    return (
+      <div className="min-h-[60vh] flex flex-col items-center justify-center text-center px-4">
+        <AlertCircle className="w-12 h-12 text-red-500 mb-4" />
+        <h2 className="text-2xl font-bold mb-2">Package Not Found</h2>
+        <p className="text-muted-foreground mb-6">The package you selected is no longer available.</p>
+        <Button onClick={() => router.push('/')}>Go to Home</Button>
+      </div>
+    );
+  }
+
+  const taxAmount = Math.round(selectedPackage.price * 0.05);
+  const totalAmount = selectedPackage.price + taxAmount;
 
   return (
     <div className="bg-gray-50 min-h-screen py-12">
@@ -107,26 +150,53 @@ export default function BookingPage() {
             <div className="animate-in fade-in slide-in-from-right-4 duration-300">
               <h2 className="text-2xl font-bold mb-6">Service Address</h2>
               
-              <div className="border rounded-xl p-6 mb-6 relative overflow-hidden bg-blue-50/30 border-primary/30">
-                <div className="absolute top-0 right-0 bg-primary text-white text-xs px-3 py-1 rounded-bl-lg">Selected</div>
-                <div className="flex items-start">
-                  <MapPin className="w-5 h-5 text-primary mt-1 mr-3 shrink-0" />
+              <div className="space-y-4 max-w-md">
+                <div>
+                  <label className="block text-sm font-medium mb-1">House/Flat No. & Building Name</label>
+                  <input
+                    type="text"
+                    required
+                    value={address.line1}
+                    onChange={(e) => setAddress({...address, line1: e.target.value})}
+                    className="w-full rounded-md border border-gray-300 px-3 py-2 focus:border-primary focus:ring-primary text-sm"
+                    placeholder="e.g. Flat 402, Sunshine Apartments"
+                  />
+                </div>
+                <div className="grid grid-cols-2 gap-4">
                   <div>
-                    <h4 className="font-semibold">Home</h4>
-                    <p className="text-sm text-muted-foreground mt-1 leading-relaxed">
-                      Flat 402, Sunshine Apartments, Link Road, Andheri West, Mumbai, Maharashtra 400053
-                    </p>
+                    <label className="block text-sm font-medium mb-1">City</label>
+                    <input
+                      type="text"
+                      required
+                      value={address.city}
+                      onChange={(e) => setAddress({...address, city: e.target.value})}
+                      className="w-full rounded-md border border-gray-300 px-3 py-2 focus:border-primary focus:ring-primary text-sm"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium mb-1">Pincode</label>
+                    <input
+                      type="text"
+                      required
+                      value={address.pinCode}
+                      onChange={(e) => setAddress({...address, pinCode: e.target.value.replace(/\D/g, '')})}
+                      maxLength={6}
+                      className="w-full rounded-md border border-gray-300 px-3 py-2 focus:border-primary focus:ring-primary text-sm"
+                      placeholder="e.g. 400053"
+                    />
                   </div>
                 </div>
               </div>
 
-              <Button variant="outline" className="w-full border-dashed border-2 py-8">
-                + Add New Address
-              </Button>
-
               <div className="mt-12 flex justify-between">
                 <Button variant="ghost" onClick={() => setStep(1)}>Back</Button>
-                <Button onClick={nextStep} size="lg">Continue to Payment</Button>
+                <Button 
+                  onClick={nextStep} 
+                  size="lg"
+                  disabled={!address.line1 || !address.pinCode}
+                >
+                  Continue to Payment
+                </Button>
               </div>
             </div>
           )}
@@ -138,7 +208,7 @@ export default function BookingPage() {
               {createBookingMutation.isError && (
                 <div className="mb-4 p-3 bg-red-50 text-red-600 rounded-lg flex items-center text-sm">
                   <AlertCircle className="w-4 h-4 mr-2" />
-                  Failed to create booking. Make sure backend is running and you are logged in.
+                  Failed to create booking. Make sure you are logged in.
                 </div>
               )}
 
@@ -146,16 +216,16 @@ export default function BookingPage() {
                 <h3 className="font-semibold mb-4 border-b pb-2">Order Summary</h3>
                 <div className="space-y-3 text-sm">
                   <div className="flex justify-between">
-                    <span>AC Service - Standard Package</span>
-                    <span className="font-medium">₹899</span>
+                    <span>{service?.name} - {selectedPackage.name}</span>
+                    <span className="font-medium">₹{selectedPackage.price}</span>
                   </div>
                   <div className="flex justify-between text-muted-foreground">
                     <span>Taxes & Fee</span>
-                    <span>₹45</span>
+                    <span>₹{taxAmount}</span>
                   </div>
                   <div className="flex justify-between border-t pt-3 font-bold text-lg">
                     <span>Total Amount</span>
-                    <span>₹944</span>
+                    <span>₹{totalAmount}</span>
                   </div>
                 </div>
               </div>
@@ -178,7 +248,7 @@ export default function BookingPage() {
                   className="bg-green-600 hover:bg-green-700"
                   disabled={createBookingMutation.isPending}
                 >
-                  {createBookingMutation.isPending ? 'Processing...' : 'Pay ₹944 & Book'}
+                  {createBookingMutation.isPending ? 'Processing...' : `Pay ₹${totalAmount} & Book`}
                 </Button>
               </div>
             </div>
@@ -191,7 +261,7 @@ export default function BookingPage() {
               </div>
               <h2 className="text-3xl font-bold mb-2">Booking Confirmed!</h2>
               <p className="text-muted-foreground mb-8">
-                Your booking ID is <span className="font-bold text-black">#UC-8842-192</span>.<br/>
+                Your booking ID is <span className="font-bold text-black">#{createBookingMutation.data?.data?.id?.split('-')[0].toUpperCase()}</span>.<br/>
                 We have assigned a top-rated professional for your service.
               </p>
               
@@ -209,5 +279,13 @@ export default function BookingPage() {
         </div>
       </div>
     </div>
+  );
+}
+
+export default function BookingPage() {
+  return (
+    <Suspense fallback={<div className="min-h-screen flex items-center justify-center"><Loader2 className="w-10 h-10 animate-spin text-primary" /></div>}>
+      <BookingContent />
+    </Suspense>
   );
 }
