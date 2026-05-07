@@ -8,8 +8,13 @@ async function main() {
   console.log('🌱 Start seeding...');
 
   // Clean in dependency order
+  await prisma.transaction.deleteMany();
+  await prisma.review.deleteMany();
+  await prisma.booking.deleteMany();
   await prisma.package.deleteMany();
   await prisma.service.deleteMany();
+  await prisma.partner.deleteMany();
+  await prisma.user.deleteMany();
   await prisma.category.deleteMany();
 
   // ─── Categories ───────────────────────────────────────────────
@@ -189,6 +194,69 @@ async function main() {
     { name: 'Filter Replacement', price: 799, duration_min: 60, inclusions: ['Sediment filter', 'Carbon filter', 'Membrane check', 'TDS test'] },
     { name: 'Full Service',       price: 999, duration_min: 90, inclusions: ['All filters replaced', 'Membrane check', 'Sanitization', 'TDS test'] },
   ]);
+
+  // ─── Users & Partners ────────────────────────────────────────
+  console.log('👤 Creating test users and partners...');
+  
+  // Test Customer
+  const customerUser = await prisma.user.create({
+    data: {
+      name: 'John Doe',
+      phone: '9876543210',
+      email: 'john@example.com',
+      city: 'Mumbai',
+      role: 'CUSTOMER'
+    }
+  });
+
+  // Test Partner 1: AC Expert
+  const p1User = await prisma.user.create({
+    data: {
+      name: 'Rahul AC Expert',
+      phone: '9999999991',
+      email: 'rahul@ac.com',
+      city: 'Mumbai',
+      role: 'PARTNER'
+    }
+  });
+  await prisma.partner.create({
+    data: {
+      user_id: p1User.id,
+      kyc_status: 'APPROVED',
+      category_ids: [catAC.id],
+      rating: 4.8
+    }
+  });
+
+  // Test Partner 2: Cleaning Expert
+  const p2User = await prisma.user.create({
+    data: {
+      name: 'Suresh Cleaning',
+      phone: '9999999992',
+      email: 'suresh@clean.com',
+      city: 'Mumbai',
+      role: 'PARTNER'
+    }
+  });
+  await prisma.partner.create({
+    data: {
+      user_id: p2User.id,
+      kyc_status: 'APPROVED',
+      category_ids: [catCleaning.id, catSofa.id],
+      rating: 4.9
+    }
+  });
+
+  // Test Admin
+  await prisma.user.create({
+    data: {
+      name: 'Super Admin',
+      phone: '0000000000',
+      email: 'admin@urbanservice.com',
+      city: 'Mumbai',
+      role: 'ADMIN'
+    }
+  });
 
   console.log('✅ Seeding complete!');
 }

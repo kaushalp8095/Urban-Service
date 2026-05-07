@@ -20,6 +20,77 @@ export const useVerifyOtp = () => {
   });
 };
 
+// --- USER HOOKS ---
+export const useProfile = () => {
+  return useQuery({
+    queryKey: ['profile'],
+    queryFn: async () => {
+      const res = await authApiClient.get('/user/profile');
+      return res.data;
+    },
+  });
+};
+
+export const useUpdateProfile = () => {
+  return useMutation({
+    mutationFn: async (data: { name?: string; email?: string; city?: string; address_json?: any }) => {
+      const res = await authApiClient.put('/user/profile', data);
+      return res.data;
+    },
+  });
+};
+
+// --- ADMIN HOOKS ---
+export const useAdminStats = () => {
+  return useQuery({
+    queryKey: ['admin-stats'],
+    queryFn: async () => {
+      const res = await authApiClient.get('/admin/stats');
+      return res.data;
+    },
+  });
+};
+
+export const useAdminBookings = () => {
+  return useQuery({
+    queryKey: ['admin-bookings'],
+    queryFn: async () => {
+      const res = await authApiClient.get('/admin/bookings');
+      return res.data;
+    },
+  });
+};
+
+// --- PARTNER HOOKS ---
+export const usePartnerRegister = () => {
+  return useMutation({
+    mutationFn: async (data: { category_ids: string[] }) => {
+      const res = await authApiClient.post('/partner/register', data);
+      return res.data;
+    },
+  });
+};
+
+export const usePartnerStats = () => {
+  return useQuery({
+    queryKey: ['partner-stats'],
+    queryFn: async () => {
+      const res = await authApiClient.get('/partner/stats');
+      return res.data;
+    },
+  });
+};
+
+export const usePartnerBookings = () => {
+  return useQuery({
+    queryKey: ['partner-bookings'],
+    queryFn: async () => {
+      const res = await authApiClient.get('/partner/bookings');
+      return res.data;
+    },
+  });
+};
+
 // --- SERVICES HOOKS ---
 export const useCategories = () => {
   return useQuery({
@@ -71,17 +142,11 @@ export const useService = (id: string) => {
 export const useCreateBooking = () => {
   return useMutation({
     mutationFn: async (data: {
-      serviceId: string;
-      packageId: string;
-      scheduledAt: string;
+      package_id: string;
+      slot_datetime: string;
       address: { line1: string; city: string; state: string; pinCode: string };
     }) => {
-      const payload = {
-        package_id: data.packageId,
-        slot_datetime: data.scheduledAt,
-        address: data.address
-      };
-      const res = await authApiClient.post('/bookings', payload);
+      const res = await authApiClient.post('/bookings', data);
       return res.data;
     },
   });
@@ -92,6 +157,15 @@ export const useMyBookings = () => {
     queryKey: ['my-bookings'],
     queryFn: async () => {
       const res = await authApiClient.get('/bookings');
+      return res.data;
+    },
+  });
+};
+
+export const useUpdateBookingStatus = () => {
+  return useMutation({
+    mutationFn: async ({ id, status }: { id: string; status: string }) => {
+      const res = await authApiClient.patch(`/bookings/${id}/status`, { status });
       return res.data;
     },
   });

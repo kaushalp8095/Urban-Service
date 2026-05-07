@@ -46,9 +46,8 @@ function BookingContent() {
 
     try {
       await createBookingMutation.mutateAsync({
-        serviceId: serviceId as string,
-        packageId: packageId as string,
-        scheduledAt: `${date}T${time.split(' ')[0]}:00.000Z`, // Simple ISO format mock
+        package_id: packageId as string,
+        slot_datetime: `${date}T${time.split(' ')[0]}:00.000Z`, 
         address: address
       });
       nextStep();

@@ -1,12 +1,12 @@
-import { Router, Request, Response } from 'express';
+import { Router } from 'express';
 import { authenticate } from '../middlewares/auth';
 import { authorize } from '../middlewares/rbac';
+import { registerPartner, getPartnerBookings, getPartnerStats } from '../controllers/partner.controller';
 
 const router = Router();
 
-// Partner dashboard base route
-router.get('/dashboard', authenticate, authorize(['PARTNER']), async (req: Request, res: Response) => {
-  res.json({ success: true, message: 'Partner dashboard data scaffold' });
-});
+router.post('/register', authenticate, registerPartner);
+router.get('/bookings', authenticate, authorize(['PARTNER']), getPartnerBookings);
+router.get('/stats', authenticate, authorize(['PARTNER']), getPartnerStats);
 
 export default router;
