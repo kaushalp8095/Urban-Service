@@ -12,12 +12,18 @@ const BACKEND_URL =
 
 const nextConfig: NextConfig = {
   async rewrites() {
-    return [
-      {
-        source: "/api/v1/:path*",
-        destination: `${BACKEND_URL}/api/v1/:path*`,
-      },
-    ];
+    const isDev = process.env.NODE_ENV === 'development';
+    const backendBase = process.env.BACKEND_API_URL || "https://backend-eta-eight-29.vercel.app";
+    const destination = isDev ? "http://localhost:5000/api/v1/:path*" : `${backendBase}/api/v1/:path*`;
+
+    return {
+      beforeFiles: [
+        {
+          source: "/api/v1/:path*",
+          destination: destination,
+        },
+      ],
+    };
   },
 };
 
