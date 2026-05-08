@@ -7,26 +7,20 @@ import apiRoutes from './routes';
 
 const app: Application = express();
 
-// Security and utility middlewares
-app.use(helmet());
 const ALLOWED_ORIGINS = (process.env.ALLOWED_ORIGINS || '')
   .split(',')
   .map((o) => o.trim())
   .filter(Boolean);
 
-// Always allow localhost in dev + any vercel.app preview URLs
 const corsOptions: cors.CorsOptions = {
   origin: (origin, callback) => {
-    // Allow requests with no origin (curl, Postman, server-to-server)
+    // Allow no-origin requests (Postman, server-to-server, curl)
     if (!origin) return callback(null, true);
-
-    // Exact matches from env
+    // Exact match from env var
     if (ALLOWED_ORIGINS.includes(origin)) return callback(null, true);
-
-    // Allow any *.vercel.app subdomain (covers preview deployments)
+    // Any *.vercel.app preview deployment
     if (/^https:\/\/[\w-]+\.vercel\.app$/.test(origin)) return callback(null, true);
-
-    // Allow localhost in any port (dev)
+    // localhost dev
     if (/^http:\/\/localhost(:\d+)?$/.test(origin)) return callback(null, true);
 
     callback(new Error(`CORS: origin ${origin} not allowed`));
@@ -36,14 +30,22 @@ const corsOptions: cors.CorsOptions = {
   allowedHeaders: ['Content-Type', 'Authorization'],
 };
 
+// 1. CORS FIRST — must be before helmet so headers are not stripped
 app.use(cors(corsOptions));
-app.options('*', cors(corsOptions)); // Pre-flight for all routes
+app.options('*', cors(corsOptions)); // Handle all preflight OPTIONS requests
+
+// 2. Helmet — disable crossOriginResourcePolicy which blocks cross-origin fetches
+app.use(helmet({
+  crossOriginResourcePolicy: false,
+  crossOriginOpenerPolicy: false,
+}));
+
 app.use(express.json());
 
 // Rate Limiting
 const limiter = rateLimit({
-  windowMs: 15 * 60 * 1000, // 15 minutes
-  limit: 100, // Limit each IP to 100 requests per `window` (here, per 15 minutes).
+  windowMs: 15 * 60 * 1000,
+  limit: 100,
   standardHeaders: 'draft-7',
   legacyHeaders: false,
 });

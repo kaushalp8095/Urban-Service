@@ -133,24 +133,37 @@ router.get('/:id', async (req: Request, res: Response) => {
         include: { packages: true, category: true },
       });
     } else {
-      // Slug lookup: convert "ac-gas-refill" → "ac gas refill" and match by name
+      // Slug lookup: convert "ac-gas-refill" → "ac gas refill"
       const nameFromSlug = param.replace(/-/g, ' ');
-      // Try exact match first
+      const words = nameFromSlug.split(' ').filter(Boolean);
+
+      // 1) Exact full name match
       service = await prisma.service.findFirst({
-        where: {
-          name: { equals: nameFromSlug, mode: 'insensitive' },
-          is_active: true,
-        },
+        where: { name: { equals: nameFromSlug, mode: 'insensitive' }, is_active: true },
         include: { packages: true, category: true },
       });
-      // Fallback: contains match on first keyword(s)
+
+      // 2) Contains full phrase
       if (!service) {
-        const firstKeyword = nameFromSlug.split(' ').slice(0, 2).join(' ');
         service = await prisma.service.findFirst({
-          where: {
-            name: { contains: firstKeyword, mode: 'insensitive' },
-            is_active: true,
-          },
+          where: { name: { contains: nameFromSlug, mode: 'insensitive' }, is_active: true },
+          include: { packages: true, category: true },
+        });
+      }
+
+      // 3) Contains first 2 words
+      if (!service && words.length >= 2) {
+        const twoWords = words.slice(0, 2).join(' ');
+        service = await prisma.service.findFirst({
+          where: { name: { contains: twoWords, mode: 'insensitive' }, is_active: true },
+          include: { packages: true, category: true },
+        });
+      }
+
+      // 4) Contains first word only
+      if (!service && words.length >= 1) {
+        service = await prisma.service.findFirst({
+          where: { name: { contains: words[0], mode: 'insensitive' }, is_active: true },
           include: { packages: true, category: true },
         });
       }
