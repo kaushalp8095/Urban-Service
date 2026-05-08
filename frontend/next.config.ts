@@ -1,11 +1,13 @@
 import type { NextConfig } from "next";
 
 // Backend URL for server-side API proxy (Next.js rewrites run server-side)
-// Priority: BACKEND_API_URL > strip /api/v1 from NEXT_PUBLIC_API_URL > hardcoded production URL
+// Priority: BACKEND_API_URL > strip /api/v1 from NEXT_PUBLIC_API_URL > env-based default
 const BACKEND_URL =
   process.env.BACKEND_API_URL ||
   (process.env.NEXT_PUBLIC_API_URL
     ? process.env.NEXT_PUBLIC_API_URL.replace("/api/v1", "")
+    : process.env.NODE_ENV === "development"
+    ? "http://localhost:5000"
     : "https://backend-eta-eight-29.vercel.app");
 
 const nextConfig: NextConfig = {
