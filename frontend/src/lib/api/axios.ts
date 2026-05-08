@@ -1,16 +1,20 @@
 import axios from 'axios';
 
+// Use relative URL — Next.js rewrites proxy /api/v1/* → backend
+// This eliminates CORS entirely (same-origin from browser's perspective)
+const BASE_URL = '/api/v1';
+
 // Default instance for public APIs
 export const apiClient = axios.create({
-  baseURL: process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api/v1',
+  baseURL: BASE_URL,
   headers: {
     'Content-Type': 'application/json',
   },
 });
 
-// Authenticated instance (can attach interceptors later for JWT)
+// Authenticated instance
 export const authApiClient = axios.create({
-  baseURL: process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api/v1',
+  baseURL: BASE_URL,
   headers: {
     'Content-Type': 'application/json',
   },
