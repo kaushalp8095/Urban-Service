@@ -26,8 +26,9 @@ export default function RootLayout({
     <html
       lang="en"
       className={`${poppins.variable} h-full antialiased`}
+      style={{ overflowX: 'hidden' }}
     >
-      <body className={`${poppins.className} min-h-full flex flex-col`} suppressHydrationWarning>
+      <body className={`${poppins.className} min-h-full flex flex-col`} style={{ overflowX: 'hidden', maxWidth: '100vw' }} suppressHydrationWarning>
         <QueryProvider>
           <CityProvider>
             <Header />
