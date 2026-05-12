@@ -22,7 +22,7 @@ export default function AdminDashboardLayout({ children }: { children: React.Rea
           <Link href="/admin/partners" className="flex items-center px-4 py-3 text-slate-300 hover:bg-slate-800 hover:text-white rounded-lg transition-colors">
             <FileCheck className="w-5 h-5 mr-3" /> Partner KYC
           </Link>
-          <Link href="/admin/services" className="flex items-center px-4 py-3 text-slate-300 hover:bg-slate-800 hover:text-white rounded-lg transition-colors">
+          <Link href="/admin/dashboard/services" className="flex items-center px-4 py-3 text-slate-300 hover:bg-slate-800 hover:text-white rounded-lg transition-colors">
             <Layers className="w-5 h-5 mr-3" /> Services
           </Link>
           <Link href="/admin/analytics" className="flex items-center px-4 py-3 text-slate-300 hover:bg-slate-800 hover:text-white rounded-lg transition-colors">

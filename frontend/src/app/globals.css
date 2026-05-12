@@ -137,4 +137,54 @@
   html {
     @apply font-sans;
   }
+
+  /* Interactive Elements */
+  a, button, [role="button"], input[type="submit"], input[type="button"], select {
+    cursor: pointer !important;
+    transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+  }
+
+  button:hover, a:hover {
+    opacity: 0.9;
+  }
+
+  button:active, a:active {
+    transform: scale(0.96);
+  }
+
+  /* Premium Hover Effects */
+  .hover-lift {
+    transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 0.3s ease;
+  }
+  .hover-lift:hover {
+    transform: translateY(-4px) scale(1.02);
+    box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -6px rgba(0, 0, 0, 0.04);
+  }
+
+  /* Card Hover Logic */
+  .card-hover {
+    transition: all 0.3s ease;
+  }
+  .card-hover:hover {
+    border-color: var(--primary);
+    background-color: oklch(0.98 0 0);
+  }
+
+  /* Custom Scrollbar for modern look */
+  ::-webkit-scrollbar {
+    width: 10px;
+  }
+  ::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  ::-webkit-scrollbar-thumb {
+    background: #e2e8f0;
+    border-radius: 20px;
+    border: 3px solid transparent;
+    background-clip: content-box;
+  }
+  ::-webkit-scrollbar-thumb:hover {
+    background: #cbd5e1;
+    background-clip: content-box;
+  }
 }

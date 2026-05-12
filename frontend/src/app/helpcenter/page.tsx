@@ -1,10 +1,13 @@
-import { Metadata } from 'next';
-import Link from 'next/link';
+'use client';
 
-export const metadata: Metadata = {
-  title: 'Help Center | Urban Service',
-  description: 'Find answers to your questions about Urban Service.',
-};
+import { useSearchParams } from 'next/navigation';
+import Link from 'next/link';
+import { 
+  HelpCircle, Search, MessageSquare, Phone, 
+  ChevronRight, ArrowLeft, ShieldCheck, Mail 
+} from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Suspense } from 'react';
 
 const FAQS = [
   { q: 'How do I book a service?', a: 'Browse services, select your city, choose a slot, and confirm. You\'ll receive instant confirmation via SMS & email.' },
@@ -15,26 +18,120 @@ const FAQS = [
   { q: 'What payment methods are accepted?', a: 'We accept UPI, Credit/Debit Cards, Net Banking, and Cash on completion.' },
 ];
 
+function HelpCenterContent() {
+  const searchParams = useSearchParams();
+  const bookingId = searchParams.get('bookingId');
+
+  return (
+    <div className="bg-white min-h-screen">
+      {/* Hero Section */}
+      <section className="bg-slate-900 text-white py-20 relative overflow-hidden">
+        <div className="absolute top-0 right-0 w-96 h-96 bg-primary/20 rounded-full blur-[120px] -mr-48 -mt-48" />
+        <div className="container mx-auto px-4 max-w-5xl relative z-10">
+          <Link href="/orders" className="inline-flex items-center text-slate-400 hover:text-white mb-8 transition-colors text-sm font-medium">
+            <ArrowLeft className="w-4 h-4 mr-2" /> Back to My Bookings
+          </Link>
+          <h1 className="text-4xl md:text-6xl font-black mb-6">How can we <span className="text-primary">help?</span></h1>
+          
+          <div className="relative max-w-2xl">
+            <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 w-5 h-5" />
+            <input 
+              className="w-full bg-slate-800 border-none rounded-2xl py-4 pl-12 pr-4 text-lg focus:ring-2 focus:ring-primary outline-none"
+              placeholder="Search for help..."
+            />
+          </div>
+        </div>
+      </section>
+
+      {/* Main Content */}
+      <section className="py-20">
+        <div className="container mx-auto px-4 max-w-5xl">
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-12">
+            
+            {/* FAQs */}
+            <div className="lg:col-span-2 space-y-8">
+              {bookingId && (
+                <div className="bg-primary/5 border-2 border-primary/10 p-6 rounded-3xl mb-12 flex items-start gap-4">
+                  <div className="bg-primary text-white p-2 rounded-xl">
+                    <HelpCircle className="w-6 h-6" />
+                  </div>
+                  <div>
+                    <h3 className="font-black text-lg">Support for Booking #{bookingId.split('-')[0]}</h3>
+                    <p className="text-sm text-muted-foreground mt-1">We've prioritized your request. How can we help with this specific booking?</p>
+                    <div className="flex gap-2 mt-4">
+                      <Button size="sm" className="font-bold">Reschedule</Button>
+                      <Button size="sm" variant="outline" className="font-bold">Cancel Booking</Button>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              <h2 className="text-3xl font-black mb-8">Popular Questions</h2>
+              <div className="space-y-4">
+                {FAQS.map((faq, i) => (
+                  <details key={i} className="group border rounded-2xl overflow-hidden transition-all hover:border-primary/30">
+                    <summary className="flex items-center justify-between p-6 cursor-pointer font-bold list-none">
+                      {faq.q}
+                      <ChevronRight className="w-5 h-5 transition-transform group-open:rotate-90 text-slate-400" />
+                    </summary>
+                    <div className="px-6 pb-6 text-muted-foreground leading-relaxed">
+                      {faq.a}
+                    </div>
+                  </details>
+                ))}
+              </div>
+            </div>
+
+            {/* Support Sidebar */}
+            <div className="space-y-6">
+              <div className="bg-gray-50 p-8 rounded-[2.5rem] border">
+                <h3 className="text-xl font-black mb-6">Contact Support</h3>
+                <div className="space-y-4">
+                  <a href="#" className="flex items-center p-4 bg-white rounded-2xl border hover:border-primary transition-all group">
+                    <MessageSquare className="w-5 h-5 mr-4 text-primary" />
+                    <div className="flex-1">
+                      <p className="font-bold text-sm">Chat with us</p>
+                      <p className="text-xs text-muted-foreground">Response in 2 mins</p>
+                    </div>
+                    <ChevronRight className="w-4 h-4 text-slate-300 group-hover:text-primary transition-colors" />
+                  </a>
+                  <a href="#" className="flex items-center p-4 bg-white rounded-2xl border hover:border-primary transition-all group">
+                    <Phone className="w-5 h-5 mr-4 text-primary" />
+                    <div className="flex-1">
+                      <p className="font-bold text-sm">Call us</p>
+                      <p className="text-xs text-muted-foreground">9am - 8pm IST</p>
+                    </div>
+                    <ChevronRight className="w-4 h-4 text-slate-300 group-hover:text-primary transition-colors" />
+                  </a>
+                  <a href="#" className="flex items-center p-4 bg-white rounded-2xl border hover:border-primary transition-all group">
+                    <Mail className="w-5 h-5 mr-4 text-primary" />
+                    <div className="flex-1">
+                      <p className="font-bold text-sm">Email Support</p>
+                      <p className="text-xs text-muted-foreground">help@urbanservice.com</p>
+                    </div>
+                    <ChevronRight className="w-4 h-4 text-slate-300 group-hover:text-primary transition-colors" />
+                  </a>
+                </div>
+              </div>
+
+              <div className="bg-slate-900 text-white p-8 rounded-[2.5rem] relative overflow-hidden">
+                <ShieldCheck className="w-12 h-12 text-primary/40 absolute -right-2 -bottom-2" />
+                <h4 className="font-bold mb-2">UC Trust Guarantee</h4>
+                <p className="text-sm text-slate-400">Every service is covered by our insurance and quality promise.</p>
+              </div>
+            </div>
+
+          </div>
+        </div>
+      </section>
+    </div>
+  );
+}
+
 export default function HelpCenterPage() {
   return (
-    <main style={{ minHeight: '70vh', padding: '80px 24px', maxWidth: '800px', margin: '0 auto' }}>
-      <h1 style={{ fontSize: '40px', fontWeight: 800, marginBottom: '12px' }}>Help <span style={{ background: 'linear-gradient(135deg, #6366f1, #a855f7)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>Center</span></h1>
-      <p style={{ fontSize: '16px', color: '#6b7280', marginBottom: '48px' }}>Frequently asked questions about Urban Service.</p>
-      <div style={{ display: 'flex', flexDirection: 'column', gap: '16px', marginBottom: '48px' }}>
-        {FAQS.map(({ q, a }) => (
-          <div key={q} style={{ padding: '24px', borderRadius: '14px', background: 'rgba(99,102,241,0.04)', border: '1px solid rgba(99,102,241,0.12)' }}>
-            <div style={{ fontWeight: 700, fontSize: '16px', color: '#111827', marginBottom: '8px' }}>❓ {q}</div>
-            <div style={{ fontSize: '14px', color: '#6b7280', lineHeight: '1.7' }}>{a}</div>
-          </div>
-        ))}
-      </div>
-      <div style={{ padding: '24px', borderRadius: '16px', background: 'linear-gradient(135deg, rgba(99,102,241,0.1), rgba(168,85,247,0.07))', border: '1px solid rgba(99,102,241,0.2)', textAlign: 'center' }}>
-        <div style={{ fontSize: '18px', fontWeight: 700, marginBottom: '8px' }}>Still need help?</div>
-        <p style={{ color: '#6b7280', marginBottom: '16px' }}>Our support team is available Mon–Sat, 9am – 8pm</p>
-        <Link href="/contact" style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', padding: '12px 24px', borderRadius: '12px', background: 'linear-gradient(135deg, #6366f1, #8b5cf6)', color: 'white', textDecoration: 'none', fontWeight: 600 }}>
-          Contact Support →
-        </Link>
-      </div>
-    </main>
+    <Suspense fallback={<div className="p-20 text-center font-bold">Loading...</div>}>
+      <HelpCenterContent />
+    </Suspense>
   );
 }

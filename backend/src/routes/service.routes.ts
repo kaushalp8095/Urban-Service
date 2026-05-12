@@ -19,7 +19,7 @@ router.get('/search', async (req: Request, res: Response) => {
       prisma.service.findMany({
         where: {
           is_active: true,
-          ...(city ? { city_ids: { has: city as string } } : {}),
+          ...(city ? { city_ids: { has: (city as string).toLowerCase() } } : {}),
           OR: [
             { name: { contains: query, mode: 'insensitive' } },
             { description: { contains: query, mode: 'insensitive' } },
@@ -42,6 +42,24 @@ router.get('/search', async (req: Request, res: Response) => {
   }
 });
 
+// Get popular services (e.g. top 6 based on booking count - placeholder logic for now)
+router.get('/popular', async (req: Request, res: Response) => {
+  try {
+    const { city } = req.query;
+    const services = await prisma.service.findMany({
+      where: {
+        is_active: true,
+        ...(city ? { city_ids: { has: (city as string).toLowerCase() } } : {}),
+      },
+      include: { packages: true, category: true },
+      take: 6, // Just take first 6 active ones for now as popularity metric isn't fully in DB yet
+    });
+    res.json({ success: true, data: services });
+  } catch (error) {
+    res.status(500).json({ success: false, error: { message: 'Failed to fetch popular services' } });
+  }
+});
+
 // Get all active services, optionally filtered by city
 router.get('/', async (req: Request, res: Response) => {
   try {
@@ -49,7 +67,7 @@ router.get('/', async (req: Request, res: Response) => {
     const services = await prisma.service.findMany({
       where: {
         is_active: true,
-        ...(city ? { city_ids: { has: city as string } } : {})
+        ...(city ? { city_ids: { has: (city as string).toLowerCase() } } : {})
       },
       include: {
         packages: true
@@ -109,7 +127,7 @@ router.get('/category/:categoryId', async (req: Request, res: Response) => {
       where: {
         category_id: categoryId,
         is_active: true,
-        ...(city ? { city_ids: { has: city as string } } : {}),
+        ...(city ? { city_ids: { has: (city as string).toLowerCase() } } : {}),
       },
       include: { packages: true, category: true },
     });

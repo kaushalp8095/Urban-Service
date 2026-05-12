@@ -44,3 +44,140 @@ export const getAllBookings = async (req: Request, res: Response, next: NextFunc
     next(error);
   }
 };
+
+// Category Management
+export const createCategory = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const { name, image_url, parent_id, city_ids } = req.body;
+    const category = await prisma.category.create({
+      data: { name, image_url, parent_id, city_ids }
+    });
+    res.json({ success: true, data: category });
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const updateCategory = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const { id } = req.params;
+    const { name, image_url, parent_id, city_ids } = req.body;
+    const category = await prisma.category.update({
+      where: { id },
+      data: { name, image_url, parent_id, city_ids }
+    });
+    res.json({ success: true, data: category });
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const deleteCategory = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const { id } = req.params;
+    await prisma.category.delete({ where: { id } });
+    res.json({ success: true, message: 'Category deleted' });
+  } catch (error) {
+    next(error);
+  }
+};
+
+// Service Management
+export const createService = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const { category_id, name, description, city_ids, is_active } = req.body;
+    const service = await prisma.service.create({
+      data: { category_id, name, description, city_ids, is_active }
+    });
+    res.json({ success: true, data: service });
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const updateService = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const { id } = req.params;
+    const { category_id, name, description, city_ids, is_active } = req.body;
+    const service = await prisma.service.update({
+      where: { id },
+      data: { category_id, name, description, city_ids, is_active }
+    });
+    res.json({ success: true, data: service });
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const deleteService = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const { id } = req.params;
+    await prisma.service.delete({ where: { id } });
+    res.json({ success: true, message: 'Service deleted' });
+  } catch (error) {
+    next(error);
+  }
+};
+
+// Package Management
+export const createPackage = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const { service_id, name, price, duration_min, inclusions_json } = req.body;
+    const pkg = await prisma.package.create({
+      data: { service_id, name, price, duration_min, inclusions_json }
+    });
+    res.json({ success: true, data: pkg });
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const updatePackage = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const { id } = req.params;
+    const { service_id, name, price, duration_min, inclusions_json } = req.body;
+    const pkg = await prisma.package.update({
+      where: { id },
+      data: { service_id, name, price, duration_min, inclusions_json }
+    });
+    res.json({ success: true, data: pkg });
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const deletePackage = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const { id } = req.params;
+    await prisma.package.delete({ where: { id } });
+    res.json({ success: true, message: 'Package deleted' });
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const getAllPartners = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const partners = await prisma.partner.findMany({
+      include: { user: true },
+      orderBy: { created_at: 'desc' }
+    });
+    res.json({ success: true, data: partners });
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const updatePartnerKYC = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const { id } = req.params;
+    const { kyc_status } = req.body;
+    const partner = await prisma.partner.update({
+      where: { id },
+      data: { kyc_status }
+    });
+    res.json({ success: true, data: partner });
+  } catch (error) {
+    next(error);
+  }
+};

@@ -1,10 +1,16 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { useSendOtp, useVerifyOtp } from '@/lib/api/hooks';
 import { Button } from '@/components/ui/button';
-import { CheckCircle2, AlertCircle } from 'lucide-react';
+import { CheckCircle2, AlertCircle, Loader2 } from 'lucide-react';
+import { auth } from '@/lib/firebase';
+import {
+  signInWithPhoneNumber,
+  RecaptchaVerifier,
+  ConfirmationResult,
+} from 'firebase/auth';
+import { authApiClient } from '@/lib/api/axios';
 
 export default function LoginPage() {
   const router = useRouter();
@@ -12,41 +18,125 @@ export default function LoginPage() {
   const [phone, setPhone] = useState('');
   const [otp, setOtp] = useState('');
   const [name, setName] = useState('');
-  
-  const sendOtpMutation = useSendOtp();
-  const verifyOtpMutation = useVerifyOtp();
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [recaptchaReady, setRecaptchaReady] = useState(false);
+  const [confirmationResult, setConfirmationResult] = useState<ConfirmationResult | null>(null);
 
-  const handleSendOtp = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (phone.length < 10) return;
-    
+  useEffect(() => {
+    // Load reCAPTCHA on mount
+    loadRecaptcha();
+  }, []);
+
+  const loadRecaptcha = () => {
     try {
-      await sendOtpMutation.mutateAsync({ phone, role: 'CUSTOMER' });
-      setStep('OTP');
+      // Clean up existing recaptcha
+      const existingDiv = document.getElementById('recaptcha-container');
+      if (existingDiv) {
+        existingDiv.innerHTML = '';
+      }
+
+      const recaptchaVerifier = new RecaptchaVerifier(auth, 'recaptcha-container', {
+        size: 'normal',
+        callback: () => {
+          setRecaptchaReady(true);
+        },
+        'expired-callback': () => {
+          setError('Verification expired. Please try again.');
+          setRecaptchaReady(false);
+        },
+      });
+
+      recaptchaVerifier.render().then(() => {
+        setRecaptchaReady(true);
+      }).catch(() => {
+        setError('Failed to load verification. Please refresh the page.');
+      });
     } catch (err) {
-      console.error(err);
+      console.error('Recaptcha error:', err);
     }
   };
 
-  const handleVerifyOtp = async (e: React.FormEvent) => {
+  const handleSendOTP = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (otp.length < 4) return;
+    if (phone.length < 10) return;
+
+    setLoading(true);
+    setError(null);
 
     try {
-      const res = await verifyOtpMutation.mutateAsync({ phone, otp, role: 'CUSTOMER', name: name || undefined });
-      
-      const token = res.data?.token || res.token;
-      const user = res.data?.user || res.user;
+      const formattedPhone = phone.startsWith('+91') ? phone : `+91${phone}`;
 
-      localStorage.setItem('token', token);
-      if (user) {
-        if (user.phone) localStorage.setItem('userPhone', user.phone);
-        if (user.name) localStorage.setItem('userName', user.name);
+      // Send OTP via Firebase
+      const result = await signInWithPhoneNumber(
+        auth,
+        formattedPhone,
+        new RecaptchaVerifier(auth, 'recaptcha-container', {
+          size: 'normal',
+        })
+      );
+
+      setConfirmationResult(result);
+      setStep('OTP');
+    } catch (err: any) {
+      console.error('Send OTP error:', err);
+      if (err.code === 'Firebase: FIRTV0001') {
+        setError('Invalid phone number. Please check and try again.');
+      } else if (err.code === 'Firebase: TOO_MANY_REQUESTS') {
+        setError('Too many attempts. Please wait a few minutes and try again.');
+      } else {
+        setError(err.message || 'Failed to send OTP. Please try again.');
       }
-      router.push('/');
-    } catch (err) {
-      console.error(err);
+      // Reload recaptcha on error
+      loadRecaptcha();
+    } finally {
+      setLoading(false);
     }
+  };
+
+  const handleVerifyOTP = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (otp.length < 6 || !confirmationResult) return;
+
+    setLoading(true);
+    setError(null);
+
+    try {
+      // Verify OTP with Firebase
+      const userCredential = await confirmationResult.confirm(otp);
+      const idToken = await userCredential.user.getIdToken();
+
+      // Send Firebase token to backend to get JWT
+      const res = await authApiClient.post('/auth/verify-firebase-token', {
+        idToken,
+      });
+
+      const { token, user } = res.data.data;
+
+      // Store in localStorage
+      localStorage.setItem('token', token);
+      if (user?.phone) localStorage.setItem('userPhone', user.phone);
+      if (user?.name) localStorage.setItem('userName', user.name);
+      if (user?.role) localStorage.setItem('userRole', user.role);
+      if (user?.id) localStorage.setItem('userId', user.id);
+
+      router.push('/');
+    } catch (err: any) {
+      console.error('Verify OTP error:', err);
+      if (err.code === 'Firebase: ERROR_INVALID_VERIFICATION_CODE') {
+        setError('Invalid OTP. Please check and try again.');
+      } else {
+        setError(err.response?.data?.error?.message || 'Verification failed. Please try again.');
+      }
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleResendOTP = () => {
+    setStep('PHONE');
+    setOtp('');
+    loadRecaptcha();
   };
 
   return (
@@ -56,22 +146,15 @@ export default function LoginPage() {
           Login or Sign Up
         </h1>
 
-        {sendOtpMutation.isError && (
+        {error && (
           <div className="mb-4 p-3 bg-red-50 text-red-600 rounded-lg flex items-center text-sm">
-            <AlertCircle className="w-4 h-4 mr-2" />
-            Failed to send OTP. Please try again.
-          </div>
-        )}
-
-        {verifyOtpMutation.isError && (
-          <div className="mb-4 p-3 bg-red-50 text-red-600 rounded-lg flex items-center text-sm">
-            <AlertCircle className="w-4 h-4 mr-2" />
-            Invalid OTP. Please try again.
+            <AlertCircle className="w-4 h-4 mr-2 shrink-0" />
+            {error}
           </div>
         )}
 
         {step === 'PHONE' ? (
-          <form onSubmit={handleSendOtp} className="space-y-4">
+          <form onSubmit={handleSendOTP} className="space-y-4">
             <div>
               <label className="block text-sm font-medium mb-1">Mobile Number</label>
               <div className="flex">
@@ -89,24 +172,30 @@ export default function LoginPage() {
                 />
               </div>
             </div>
-            <Button 
-              type="submit" 
-              className="w-full" 
-              disabled={phone.length < 10 || sendOtpMutation.isPending}
+
+            {/* reCAPTCHA container */}
+            <div id="recaptcha-container" className="flex justify-center" />
+
+            <Button
+              type="submit"
+              className="w-full"
+              disabled={phone.length < 10 || loading || !recaptchaReady}
             >
-              {sendOtpMutation.isPending ? 'Sending...' : 'Continue'}
+              {loading ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : null}
+              {loading ? 'Sending...' : 'Send OTP'}
             </Button>
+
             <p className="text-xs text-center text-muted-foreground mt-4">
               By proceeding, you consent to get calls, WhatsApp or SMS messages, including by automated means, from UrbanService and its affiliates.
             </p>
           </form>
         ) : (
-          <form onSubmit={handleVerifyOtp} className="space-y-4">
+          <form onSubmit={handleVerifyOTP} className="space-y-4">
             <div className="flex items-center justify-between mb-4">
               <span className="text-sm font-medium">OTP sent to +91 {phone}</span>
-              <button 
-                type="button" 
-                onClick={() => setStep('PHONE')} 
+              <button
+                type="button"
+                onClick={() => { setStep('PHONE'); setOtp(''); }}
                 className="text-xs text-primary font-bold hover:underline"
               >
                 Edit
@@ -126,7 +215,7 @@ export default function LoginPage() {
                 Leave blank if you already have an account.
               </p>
             </div>
-            
+
             <div>
               <label className="block text-sm font-medium mb-1">Enter OTP</label>
               <input
@@ -136,19 +225,28 @@ export default function LoginPage() {
                 value={otp}
                 onChange={(e) => setOtp(e.target.value.replace(/\D/g, ''))}
                 className="block w-full rounded-md border border-gray-300 px-3 py-2 focus:border-primary focus:ring-primary sm:text-sm text-center tracking-widest text-lg"
-                placeholder="0000"
+                placeholder="000000"
               />
-              <p className="text-xs text-muted-foreground mt-2">
-                Hint: Check backend console for mock OTP
-              </p>
             </div>
-            <Button 
-              type="submit" 
+
+            <Button
+              type="submit"
               className="w-full"
-              disabled={otp.length < 4 || verifyOtpMutation.isPending}
+              disabled={otp.length < 6 || loading}
             >
-              {verifyOtpMutation.isPending ? 'Verifying...' : 'Verify & Proceed'}
+              {loading ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : null}
+              {loading ? 'Verifying...' : 'Verify & Proceed'}
             </Button>
+
+            <div className="text-center">
+              <button
+                type="button"
+                onClick={handleResendOTP}
+                className="text-sm text-primary hover:underline"
+              >
+                Resend OTP
+              </button>
+            </div>
           </form>
         )}
       </div>

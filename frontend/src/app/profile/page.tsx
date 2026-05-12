@@ -74,12 +74,16 @@ export default function ProfilePage() {
                 <Calendar className="w-4 h-4 mr-3" /> My Bookings
               </Button>
             </Link>
-            <Button variant="ghost" className="w-full justify-start text-muted-foreground hover:text-black">
-              <Wallet className="w-4 h-4 mr-3" /> UC Wallet
-            </Button>
-            <Button variant="ghost" className="w-full justify-start text-muted-foreground hover:text-black">
-              <Settings className="w-4 h-4 mr-3" /> Settings
-            </Button>
+            <Link href="/wallet">
+              <Button variant="ghost" className="w-full justify-start text-muted-foreground hover:text-black">
+                <Wallet className="w-4 h-4 mr-3" /> UC Wallet
+              </Button>
+            </Link>
+            <Link href="/settings">
+              <Button variant="ghost" className="w-full justify-start text-muted-foreground hover:text-black">
+                <Settings className="w-4 h-4 mr-3" /> Settings
+              </Button>
+            </Link>
             <Button variant="ghost" className="w-full justify-start text-red-500 hover:text-red-600 hover:bg-red-50" onClick={handleLogout}>
               <LogOut className="w-4 h-4 mr-3" /> Logout
             </Button>

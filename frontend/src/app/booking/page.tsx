@@ -5,7 +5,8 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { CheckCircle2, MapPin, Clock, CreditCard, AlertCircle, Loader2 } from 'lucide-react';
 import Link from 'next/link';
-import { useCreateBooking, useService } from '@/lib/api/hooks';
+import { useCreateBooking, useService, useAvailableSlots } from '@/lib/api/hooks';
+import { format, addDays } from 'date-fns';
 
 function BookingContent() {
   const router = useRouter();
@@ -14,8 +15,11 @@ function BookingContent() {
   const packageId = searchParams.get('packageId');
 
   const [step, setStep] = useState(1);
-  const [date, setDate] = useState('2026-05-08');
-  const [time, setTime] = useState('09:00 AM');
+  
+  // Generating next 4 days for selection
+  const availableDates = Array.from({ length: 4 }, (_, i) => addDays(new Date(), i));
+  const [selectedDate, setSelectedDate] = useState(format(availableDates[0], 'yyyy-MM-dd'));
+  const [selectedTime, setSelectedTime] = useState('');
   
   // Address form state
   const [address, setAddress] = useState({
@@ -35,10 +39,10 @@ function BookingContent() {
   const service = serviceData?.data;
   const selectedPackage = service?.packages?.find((p: any) => p.id === packageId);
 
-  const createBookingMutation = useCreateBooking();
+  const { data: slotsData, isLoading: isLoadingSlots } = useAvailableSlots(packageId as string, selectedDate);
+  const slots = slotsData?.data || [];
 
-  const dates = ["Today, 6 May", "Tomorrow, 7 May", "Wed, 8 May", "Thu, 9 May"];
-  const times = ["09:00 AM", "11:00 AM", "01:00 PM", "03:00 PM", "05:00 PM"];
+  const createBookingMutation = useCreateBooking();
 
   const nextStep = () => setStep(s => Math.min(s + 1, 4));
 
@@ -50,10 +54,15 @@ function BookingContent() {
       return;
     }
 
+    if (!selectedTime) {
+      alert('Please select a time slot');
+      return;
+    }
+
     try {
       await createBookingMutation.mutateAsync({
         package_id: packageId as string,
-        slot_datetime: `${date}T${time.split(' ')[0]}:00.000Z`, 
+        slot_datetime: `${selectedDate}T${selectedTime}:00.000Z`, 
         address: address
       });
       nextStep();
@@ -128,25 +137,48 @@ function BookingContent() {
               
               <h3 className="font-semibold mb-3">Select Date</h3>
               <div className="flex space-x-4 overflow-x-auto pb-4 scrollbar-hide">
-                {dates.map((d, i) => (
-                  <div key={i} className={`flex-shrink-0 border rounded-xl p-4 cursor-pointer text-center min-w-[120px] ${i === 0 ? 'border-primary ring-1 ring-primary bg-blue-50/50' : 'hover:border-gray-400'}`}>
-                    <div className="font-semibold">{d.split(',')[0]}</div>
-                    <div className="text-sm text-muted-foreground">{d.split(',')[1]}</div>
-                  </div>
-                ))}
+                {availableDates.map((d, i) => {
+                  const dateStr = format(d, 'yyyy-MM-dd');
+                  const isSelected = selectedDate === dateStr;
+                  return (
+                    <div 
+                      key={i} 
+                      onClick={() => { setSelectedDate(dateStr); setSelectedTime(''); }}
+                      className={`flex-shrink-0 border rounded-xl p-4 cursor-pointer text-center min-w-[120px] transition-all ${isSelected ? 'border-primary ring-1 ring-primary bg-blue-50/50' : 'hover:border-gray-400 bg-white'}`}
+                    >
+                      <div className="font-semibold">{format(d, 'EEE')}</div>
+                      <div className="text-sm text-muted-foreground">{format(d, 'd MMM')}</div>
+                    </div>
+                  );
+                })}
               </div>
 
               <h3 className="font-semibold mb-3 mt-6">Select Time</h3>
-              <div className="grid grid-cols-3 md:grid-cols-5 gap-4">
-                {times.map((t, i) => (
-                  <div key={i} className={`border rounded-lg py-3 text-center cursor-pointer text-sm font-medium ${i === 1 ? 'border-primary ring-1 ring-primary bg-blue-50/50 text-primary' : 'hover:border-gray-400'}`}>
-                    {t}
-                  </div>
-                ))}
-              </div>
+              {isLoadingSlots ? (
+                <div className="flex justify-center py-6"><Loader2 className="w-6 h-6 animate-spin text-primary" /></div>
+              ) : slots.length > 0 ? (
+                <div className="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-5 gap-3">
+                  {slots.map((s: any, i: number) => {
+                    const isSelected = selectedTime === s.start_time;
+                    return (
+                      <div 
+                        key={i} 
+                        onClick={() => setSelectedTime(s.start_time)}
+                        className={`border rounded-lg py-3 text-center cursor-pointer text-sm font-bold transition-all ${isSelected ? 'border-primary ring-1 ring-primary bg-blue-50/50 text-primary' : 'hover:border-gray-400 bg-white text-gray-600'}`}
+                      >
+                        {s.start_time}
+                      </div>
+                    );
+                  })}
+                </div>
+              ) : (
+                <div className="p-6 bg-orange-50 text-orange-700 rounded-xl text-sm border border-orange-100 italic">
+                  No slots available for this date. Please try another day.
+                </div>
+              )}
 
               <div className="mt-12 flex justify-end">
-                <Button onClick={nextStep} size="lg">Continue to Address</Button>
+                <Button onClick={nextStep} size="lg" disabled={!selectedTime}>Continue to Address</Button>
               </div>
             </div>
           )}

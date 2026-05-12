@@ -7,6 +7,9 @@ import apiRoutes from './routes';
 
 const app: Application = express();
 
+// Trust Vercel's proxy headers for express-rate-limit
+app.set('trust proxy', 1);
+
 const ALLOWED_ORIGINS = (process.env.ALLOWED_ORIGINS || '')
   .split(',')
   .map((o) => o.trim())

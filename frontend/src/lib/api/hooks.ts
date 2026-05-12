@@ -61,6 +61,88 @@ export const useAdminBookings = () => {
   });
 };
 
+// Admin CRUD Mutations
+export const useCreateCategory = () => {
+  return useMutation({
+    mutationFn: async (data: any) => {
+      const res = await authApiClient.post('/admin/categories', data);
+      return res.data;
+    }
+  });
+};
+
+export const useUpdateCategory = () => {
+  return useMutation({
+    mutationFn: async ({ id, data }: { id: string; data: any }) => {
+      const res = await authApiClient.patch(`/admin/categories/${id}`, data);
+      return res.data;
+    }
+  });
+};
+
+export const useDeleteCategory = () => {
+  return useMutation({
+    mutationFn: async (id: string) => {
+      const res = await authApiClient.delete(`/admin/categories/${id}`);
+      return res.data;
+    }
+  });
+};
+
+export const useCreateServiceAdmin = () => {
+  return useMutation({
+    mutationFn: async (data: any) => {
+      const res = await authApiClient.post('/admin/services', data);
+      return res.data;
+    }
+  });
+};
+
+export const useUpdateServiceAdmin = () => {
+  return useMutation({
+    mutationFn: async ({ id, data }: { id: string; data: any }) => {
+      const res = await authApiClient.patch(`/admin/services/${id}`, data);
+      return res.data;
+    }
+  });
+};
+
+export const useDeleteServiceAdmin = () => {
+  return useMutation({
+    mutationFn: async (id: string) => {
+      const res = await authApiClient.delete(`/admin/services/${id}`);
+      return res.data;
+    }
+  });
+};
+
+export const useCreatePackage = () => {
+  return useMutation({
+    mutationFn: async (data: any) => {
+      const res = await authApiClient.post('/admin/packages', data);
+      return res.data;
+    }
+  });
+};
+
+export const useUpdatePackage = () => {
+  return useMutation({
+    mutationFn: async ({ id, data }: { id: string; data: any }) => {
+      const res = await authApiClient.patch(`/admin/packages/${id}`, data);
+      return res.data;
+    }
+  });
+};
+
+export const useDeletePackage = () => {
+  return useMutation({
+    mutationFn: async (id: string) => {
+      const res = await authApiClient.delete(`/admin/packages/${id}`);
+      return res.data;
+    }
+  });
+};
+
 // --- PARTNER HOOKS ---
 export const usePartnerRegister = () => {
   return useMutation({
@@ -138,6 +220,17 @@ export const useService = (id: string) => {
   });
 };
 
+export const usePopularServices = (city?: string) => {
+  return useQuery({
+    queryKey: ['popular-services', city],
+    queryFn: async () => {
+      const url = city ? `/services/popular?city=${city}` : '/services/popular';
+      const res = await apiClient.get(url);
+      return res.data;
+    },
+  });
+};
+
 // --- BOOKING HOOKS ---
 export const useCreateBooking = () => {
   return useMutation({
@@ -166,6 +259,45 @@ export const useUpdateBookingStatus = () => {
   return useMutation({
     mutationFn: async ({ id, status }: { id: string; status: string }) => {
       const res = await authApiClient.patch(`/bookings/${id}/status`, { status });
+      return res.data;
+    },
+  });
+};
+
+export const useAvailableSlots = (packageId: string, date: string) => {
+  return useQuery({
+    queryKey: ['slots', packageId, date],
+    queryFn: async () => {
+      const res = await apiClient.get(`/bookings/slots?packageId=${packageId}&date=${date}`);
+      return res.data;
+    },
+    enabled: !!packageId && !!date,
+  });
+};
+
+export const useCreateReview = () => {
+  return useMutation({
+    mutationFn: async ({ bookingId, rating, comment }: { bookingId: string; rating: number; comment?: string }) => {
+      const res = await authApiClient.post(`/bookings/${bookingId}/review`, { rating, comment });
+      return res.data;
+    },
+  });
+};
+
+export const useWallet = () => {
+  return useQuery({
+    queryKey: ['wallet'],
+    queryFn: async () => {
+      const res = await authApiClient.get('/user/wallet');
+      return res.data;
+    },
+  });
+};
+
+export const useAddMoney = () => {
+  return useMutation({
+    mutationFn: async (amount: number) => {
+      const res = await authApiClient.post('/user/wallet/add', { amount });
       return res.data;
     },
   });

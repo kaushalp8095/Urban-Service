@@ -32,7 +32,7 @@ export function CategoriesGrid() {
     <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-6 max-w-5xl mx-auto">
       {categories.map((c: any, idx: number) => (
         <Link href={`/${citySlug || 'mumbai'}/${c.id}`} key={c.id || idx}>
-          <div className="flex flex-col items-center p-6 bg-white border rounded-xl hover:shadow-lg hover:border-primary/40 transition-all cursor-pointer h-full group">
+          <div className="flex flex-col items-center p-6 bg-white border rounded-xl hover-lift cursor-pointer h-full group">
             <div className="text-4xl mb-4 group-hover:scale-110 transition-transform">
               {c.image_url || '✨'}
             </div>

@@ -6,23 +6,11 @@ import { Button } from '@/components/ui/button';
 import { CategoriesGrid } from '@/components/home/categories-grid';
 import { useState, useRef, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { useSearch } from '@/lib/api/hooks';
+import { useSearch, usePopularServices } from '@/lib/api/hooks';
 import { CitySelect } from '@/components/ui/city-select';
 import { useCity } from '@/components/providers/city-provider';
 
 const CITIES_QUICK = ['Mumbai', 'Delhi', 'Bangalore', 'Pune', 'Hyderabad', 'Ahmedabad', 'Chennai', 'Jaipur'];
-
-const POPULAR_SERVICES_HOME = [
-  { id: 'ac-service-cleaning', category: 'ac-service', emoji: '❄️', name: 'AC Service & Cleaning', desc: 'Deep cleaning of filters, coils and drain pipe for optimal performance.', rating: 4.7, reviews: '14.3k reviews', price: 349 },
-  { id: 'full-home-cleaning', category: 'home-cleaning', emoji: '🧹', name: 'Full Home Deep Clean', desc: 'End-to-end professional cleaning of your entire home.', rating: 4.9, reviews: '22.1k reviews', price: 1199 },
-  { id: 'bathroom-cleaning', category: 'home-cleaning', emoji: '🚿', name: 'Bathroom Deep Clean', desc: 'Scrubbing of tiles, toilet, sink and all fixtures.', rating: 4.7, reviews: '18.4k reviews', price: 299 },
-  { id: 'haircut-beard-combo', category: 'mens-haircut', emoji: '✂️', name: 'Haircut + Beard Combo', desc: "Complete men's grooming package at home.", rating: 4.9, reviews: '21.5k reviews', price: 299 },
-  { id: 'facial', category: 'salon-women', emoji: '💆', name: 'Gold / Diamond Facial', desc: 'Luxury facial for glowing skin. Cleansing, massage, pack & toner.', rating: 4.9, reviews: '11.2k reviews', price: 599 },
-  { id: 'cockroach-control', category: 'pest-control', emoji: '🐛', name: 'Cockroach Control', desc: 'Gel-based treatment for complete cockroach elimination. 90-day warranty.', rating: 4.8, reviews: '11.2k reviews', price: 399 },
-  { id: 'fan-installation', category: 'electrician', emoji: '⚡', name: 'Fan Installation', desc: 'Ceiling or wall fan mounting with wiring by certified electricians.', rating: 4.8, reviews: '21k reviews', price: 149 },
-  { id: 'water-purifier-service', category: 'appliance-repair', emoji: '💧', name: 'RO / Water Purifier Service', desc: 'Annual service with filter replacement and water quality test.', rating: 4.8, reviews: '7.8k reviews', price: 299 },
-  { id: 'sofa-dry-clean', category: 'sofa-cleaning', emoji: '🛋️', name: 'Sofa Dry Cleaning', desc: 'Professional dry cleaning for all sofa types. Stain removal included.', rating: 4.7, reviews: '7.2k reviews', price: 599 },
-];
 
 const ALL_STATIC_SUGGESTIONS = [
   { id: 'ac-service-cleaning', category: 'ac-service', emoji: '❄️', name: 'AC Service & Cleaning' },
@@ -56,8 +44,11 @@ export default function Home() {
   const router = useRouter();
   const wrapperRef = useRef<HTMLDivElement>(null);
 
+  const { data: popularData, isLoading: isLoadingPopular } = usePopularServices(city || 'Mumbai');
+  const dynamicPopularServices = popularData?.data || [];
 
   // Debounce search input
+  // ...
   useEffect(() => {
     const t = setTimeout(() => setDebouncedSearch(search), 250);
     return () => clearTimeout(t);
@@ -74,12 +65,8 @@ export default function Home() {
     return () => document.removeEventListener('mousedown', handler);
   }, []);
 
-  // Static instant suggestions
-  const staticSuggestions = debouncedSearch.length >= 1
-    ? ALL_STATIC_SUGGESTIONS.filter(s =>
-        s.name.toLowerCase().includes(debouncedSearch.toLowerCase())
-      ).slice(0, 6)
-    : [];
+  const { data: searchData, isLoading: isLoadingSearch } = useSearch(debouncedSearch, city || 'Mumbai');
+  const dynamicSuggestions = searchData?.data?.services || [];
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
@@ -89,9 +76,9 @@ export default function Home() {
     }
   };
 
-  const handleSuggestionClick = (svc: typeof ALL_STATIC_SUGGESTIONS[0]) => {
+  const handleSuggestionClick = (svc: any) => {
     setShowDropdown(false);
-    router.push(`/${(city || 'Mumbai').toLowerCase()}/${svc.category}/${svc.id}`);
+    router.push(`/${(city || 'Mumbai').toLowerCase()}/${svc.category?.id || 'service'}/${svc.id}`);
   };
 
   const handlePopularClick = (query: string) => {
@@ -156,19 +143,21 @@ export default function Home() {
             {/* Dropdown suggestions */}
             {showDropdown && (
               <div className="absolute top-full left-0 right-0 mt-2 bg-white rounded-xl shadow-2xl border border-gray-100 text-black overflow-hidden z-50">
-                {staticSuggestions.length > 0 ? (
+                {isLoadingSearch ? (
+                  <div className="p-4 flex justify-center"><Loader2 className="w-5 h-5 animate-spin text-primary" /></div>
+                ) : dynamicSuggestions.length > 0 ? (
                   <>
                     <div className="px-4 pt-3 pb-1 text-xs font-semibold text-gray-400 uppercase tracking-wide">
                       Suggestions
                     </div>
-                    {staticSuggestions.map((svc) => (
+                    {dynamicSuggestions.map((svc: any) => (
                       <button
                         key={svc.id}
                         type="button"
                         onClick={() => handleSuggestionClick(svc)}
                         className="w-full flex items-center gap-3 px-4 py-3 hover:bg-primary/5 transition-colors text-left"
                       >
-                        <span className="text-xl shrink-0">{svc.emoji}</span>
+                        <span className="text-xl shrink-0">{svc.category?.image_url || '🛠️'}</span>
                         <span className="text-sm font-medium text-gray-800">{svc.name}</span>
                         <span className="ml-auto text-xs text-primary font-medium hidden sm:block">Book now →</span>
                       </button>
@@ -183,6 +172,8 @@ export default function Home() {
                       </button>
                     </div>
                   </>
+                ) : search.length >= 2 ? (
+                   <div className="px-4 py-3 text-sm text-muted-foreground italic">No services found for "{search}"</div>
                 ) : (
                   <div className="px-4 py-3">
                     <div className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-2">
@@ -259,27 +250,35 @@ export default function Home() {
               </Link>
             </div>
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6">
-              {POPULAR_SERVICES_HOME.map((svc) => (
-                <Link key={svc.id} href={`/${citySlug || 'mumbai'}/${svc.category}/${svc.id}`}>
-                  <div className="bg-white border rounded-2xl p-5 hover:shadow-lg hover:border-primary/30 transition-all group h-full">
-                    <div className="flex items-start gap-4">
-                      <div className="text-3xl shrink-0">{svc.emoji}</div>
-                      <div className="flex-1 min-w-0">
-                        <h4 className="font-bold text-gray-900 group-hover:text-primary transition-colors text-sm md:text-base">{svc.name}</h4>
-                        <p className="text-xs text-muted-foreground mt-1 mb-3 line-clamp-2">{svc.desc}</p>
-                        <div className="flex items-center justify-between flex-wrap gap-2">
-                          <div className="flex items-center gap-1.5">
-                            <span className="flex items-center gap-1 text-xs font-semibold bg-green-50 text-green-700 px-2 py-0.5 rounded-full">
-                              <Star className="w-3 h-3 fill-green-600 text-green-600" /> {svc.rating}
-                            </span>
+              {isLoadingPopular ? (
+                Array(6).fill(0).map((_, i) => (
+                  <div key={i} className="h-32 bg-gray-100 rounded-2xl animate-pulse" />
+                ))
+              ) : dynamicPopularServices.length > 0 ? (
+                dynamicPopularServices.map((svc: any) => (
+                  <Link key={svc.id} href={`/${citySlug || 'mumbai'}/${svc.category?.id || 'service'}/${svc.id}`}>
+                    <div className="bg-white border rounded-2xl p-5 hover:shadow-lg hover:border-primary/30 transition-all group h-full">
+                      <div className="flex items-start gap-4">
+                        <div className="text-3xl shrink-0">{svc.category?.image_url || '🛠️'}</div>
+                        <div className="flex-1 min-w-0">
+                          <h4 className="font-bold text-gray-900 group-hover:text-primary transition-colors text-sm md:text-base">{svc.name}</h4>
+                          <p className="text-xs text-muted-foreground mt-1 mb-3 line-clamp-2">{svc.description}</p>
+                          <div className="flex items-center justify-between flex-wrap gap-2">
+                            <div className="flex items-center gap-1.5">
+                              <span className="flex items-center gap-1 text-xs font-semibold bg-green-50 text-green-700 px-2 py-0.5 rounded-full">
+                                <Star className="w-3 h-3 fill-green-600 text-green-600" /> 4.8
+                              </span>
+                            </div>
+                            <div className="text-primary font-bold text-sm">₹{svc.packages?.[0]?.price || 0} onwards</div>
                           </div>
-                          <div className="text-primary font-bold text-sm">₹{svc.price} onwards</div>
                         </div>
                       </div>
                     </div>
-                  </div>
-                </Link>
-              ))}
+                  </Link>
+                ))
+              ) : (
+                <div className="col-span-full text-center py-10 text-muted-foreground italic">No popular services found for this city.</div>
+              )}
             </div>
           </div>
         </div>
